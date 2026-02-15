@@ -2,7 +2,7 @@ from __future__ import annotations
 
 """
 Tests for layers/parsing/parser.py
-Validates PDF and DOCX extraction against real sample documents.
+Validates PDF, DOCX, and Excel extraction against real sample documents.
 """
 
 import os
@@ -15,7 +15,7 @@ import pytest
 # Ensure backend root is on path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from layers.parsing.parser import parse_pdf, parse_docx, parse_document
+from layers.parsing.parser import parse_pdf, parse_docx, parse_xlsx, parse_document
 
 
 # ─── PDF Parsing ──────────────────────────────────────────────────
@@ -104,6 +104,52 @@ class TestParseDocx:
             parse_docx("/nonexistent/fake.docx")
 
 
+# ─── XLSX Parsing ─────────────────────────────────────────────────
+
+
+class TestParseXlsx:
+    """Tests for parse_xlsx using real sample XLSX files."""
+
+    def test_parse_xlsx_returns_list_of_tuples(self, sample_xlsx_path):
+        pages = parse_xlsx(sample_xlsx_path)
+        assert isinstance(pages, list)
+        assert len(pages) > 0
+        for item in pages:
+            assert isinstance(item, tuple)
+            assert len(item) == 2
+
+    def test_parse_xlsx_sheet_numbers_start_at_one(self, sample_xlsx_path):
+        pages = parse_xlsx(sample_xlsx_path)
+        assert pages[0][0] == 1
+
+    def test_parse_xlsx_sheet_numbers_are_sequential(self, sample_xlsx_path):
+        pages = parse_xlsx(sample_xlsx_path)
+        page_nums = [p[0] for p in pages]
+        for i in range(1, len(page_nums)):
+            assert page_nums[i] >= page_nums[i - 1]
+
+    def test_parse_xlsx_text_not_empty(self, sample_xlsx_path):
+        pages = parse_xlsx(sample_xlsx_path)
+        for page_num, text in pages:
+            assert isinstance(text, str)
+            assert len(text.strip()) > 0, f"Sheet {page_num} has empty text"
+
+    def test_parse_xlsx_contains_pipe_separators(self, sample_xlsx_path):
+        """Excel rows should be pipe-separated, matching DOCX table format."""
+        pages = parse_xlsx(sample_xlsx_path)
+        full_text = "\n".join(t for _, t in pages)
+        assert "|" in full_text, "Expected pipe separators in XLSX output"
+
+    def test_parse_xlsx_includes_sheet_name(self, sample_xlsx_path):
+        pages = parse_xlsx(sample_xlsx_path)
+        first_page_text = pages[0][1]
+        assert first_page_text.startswith("Sheet:"), "Expected sheet name header"
+
+    def test_parse_xlsx_nonexistent_raises(self):
+        with pytest.raises(Exception):
+            parse_xlsx("/nonexistent/fake.xlsx")
+
+
 # ─── Auto-detection (parse_document) ──────────────────────────────
 
 
@@ -132,6 +178,10 @@ class TestParseDocument:
         doc_path = os.path.join(tmp_dir, "test.doc")
         shutil.copy(sample_docx_path, doc_path)
         pages = parse_document(doc_path)
+        assert len(pages) > 0
+
+    def test_auto_detect_xlsx(self, sample_xlsx_path):
+        pages = parse_document(sample_xlsx_path)
         assert len(pages) > 0
 
     def test_case_insensitive_extension(self, sample_pdf_path, tmp_dir):
@@ -169,5 +219,16 @@ class TestParsingContentQuality:
             found = {term for term in insurance_terms if term in full_text}
             assert len(found) >= 2, (
                 f"{Path(docx_path).name} has no recognizable insurance terms. "
+                f"Found: {found}"
+            )
+
+    def test_xlsx_contains_recognizable_text(self, all_sample_xlsx_paths):
+        insurance_terms = {"value", "location", "coverage", "limit", "loss", "property", "amount", "premium"}
+        for xlsx_path in all_sample_xlsx_paths:
+            pages = parse_xlsx(xlsx_path)
+            full_text = " ".join(t for _, t in pages).lower()
+            found = {term for term in insurance_terms if term in full_text}
+            assert len(found) >= 2, (
+                f"{Path(xlsx_path).name} has no recognizable insurance terms. "
                 f"Found: {found}"
             )

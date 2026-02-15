@@ -5,7 +5,8 @@ import os
 LLM_BACKEND = os.getenv("LLM_BACKEND", "gemini")
 
 # ─── Embedding Backend ──────────────────────────────────────────
-# Options: "gemini", "bedrock", "openai"
+# Options: "gemini", "bedrock", "openai", "titan", "aws_bedrock", "aws"
+# Custom providers: use register_embedding_provider() from layers.embedding
 EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "gemini")
 
 # ─── Gemini ───────────────────────────────────────────────────────

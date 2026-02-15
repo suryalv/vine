@@ -1,4 +1,9 @@
-from layers.embedding.embedding_factory import get_embedding_provider, reset_embedding_provider
+from layers.embedding.embedding_factory import (
+    get_embedding_provider,
+    reset_embedding_provider,
+    register_embedding_provider,
+    list_registered_providers,
+)
 from layers.embedding.base import EmbeddingProvider
 
 

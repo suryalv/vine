@@ -86,7 +86,7 @@
   <div class="max-w-5xl mx-auto px-6 pt-6">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-        <div class="text-2xl font-bold text-accent">10</div>
+        <div class="text-2xl font-bold text-accent">11</div>
         <div class="text-xs text-gray-500 mt-1">Features</div>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
@@ -94,7 +94,7 @@
         <div class="text-xs text-gray-500 mt-1">LLM Providers</div>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-        <div class="text-2xl font-bold text-green-500">290</div>
+        <div class="text-2xl font-bold text-green-500">305</div>
         <div class="text-xs text-gray-500 mt-1">Tests Passing</div>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
@@ -138,6 +138,8 @@
 <span class="line">LLM_BACKEND = os.getenv(<span class="text-green-600 dark:text-green-400">"LLM_BACKEND"</span>, <span class="text-green-600 dark:text-green-400">"gemini"</span>)</span>
 <span class="line"></span>
 <span class="line"><span class="text-gray-500"># ─── Embedding Backend ───────────────────────────</span></span>
+<span class="line"><span class="text-gray-500"># Options: gemini, bedrock, openai, titan, aws_bedrock, aws</span></span>
+<span class="line"><span class="text-gray-500"># Custom providers: register_embedding_provider()</span></span>
 <span class="line">EMBEDDING_BACKEND = os.getenv(<span class="text-green-600 dark:text-green-400">"EMBEDDING_BACKEND"</span>, <span class="text-green-600 dark:text-green-400">"gemini"</span>)</span>
 <span class="line"></span>
 <span class="line"><span class="text-gray-500"># ─── Gemini ──────────────────────────────────────</span></span>
@@ -180,7 +182,7 @@
               <table class="w-full text-xs"><thead><tr class="border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 px-2 font-semibold text-gray-500">Variable</th><th class="text-left py-2 px-2 font-semibold text-gray-500">Default</th><th class="text-left py-2 px-2 font-semibold text-gray-500">Options</th></tr></thead>
               <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                 <tr><td class="py-2 px-2 mono text-accent">LLM_BACKEND</td><td class="py-2 px-2 mono">gemini</td><td class="py-2 px-2">gemini, bedrock, openai</td></tr>
-                <tr><td class="py-2 px-2 mono text-accent">EMBEDDING_BACKEND</td><td class="py-2 px-2 mono">gemini</td><td class="py-2 px-2">gemini, bedrock, openai</td></tr>
+                <tr><td class="py-2 px-2 mono text-accent">EMBEDDING_BACKEND</td><td class="py-2 px-2 mono">gemini</td><td class="py-2 px-2">gemini, bedrock, openai, titan, aws_bedrock, aws + custom</td></tr>
                 <tr><td class="py-2 px-2 mono text-accent">VECTOR_STORE_BACKEND</td><td class="py-2 px-2 mono">lancedb</td><td class="py-2 px-2">lancedb, pgvector, mongodb_atlas</td></tr>
                 <tr><td class="py-2 px-2 mono">GEMINI_API_KEY</td><td class="py-2 px-2 mono">(set)</td><td class="py-2 px-2">API key string</td></tr>
                 <tr><td class="py-2 px-2 mono">GEMINI_CHAT_MODEL</td><td class="py-2 px-2 mono">gemini-2.0-flash</td><td class="py-2 px-2">Any Gemini model</td></tr>
@@ -209,10 +211,10 @@
           <div id="config-usage" class="tab-content">
             <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
               <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
-<pre class="mono"><span class="line"><span class="text-gray-500"># Switch to OpenAI for LLM + Bedrock for embeddings</span></span>
+<pre class="mono"><span class="line"><span class="text-gray-500"># Switch to OpenAI for LLM + Titan for embeddings</span></span>
 <span class="line"><span class="text-blue-500">export</span> LLM_BACKEND=openai</span>
 <span class="line"><span class="text-blue-500">export</span> OPENAI_API_KEY=sk-...</span>
-<span class="line"><span class="text-blue-500">export</span> EMBEDDING_BACKEND=bedrock</span>
+<span class="line"><span class="text-blue-500">export</span> EMBEDDING_BACKEND=titan  <span class="text-gray-500"># alias for bedrock</span></span>
 <span class="line"><span class="text-blue-500">export</span> AWS_REGION=us-west-2</span>
 <span class="line"></span>
 <span class="line"><span class="text-gray-500"># Use MongoDB Atlas instead of LanceDB</span></span>
@@ -352,7 +354,7 @@
           <div class="w-9 h-9 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-500 text-lg">&#8644;</div>
           <div>
             <h3 class="font-semibold text-sm">Embedding Provider</h3>
-            <p class="text-xs text-gray-500 mt-0.5">Gemini, Bedrock Titan, or OpenAI text-embedding-3</p>
+            <p class="text-xs text-gray-500 mt-0.5">Registry-based: Gemini, Titan, OpenAI + custom providers</p>
           </div>
         </div>
         <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">EMBEDDING_BACKEND</span>
@@ -360,11 +362,12 @@
       <div class="expand-panel">
         <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Same ABC + Factory pattern as LLM. The <code class="mono text-xs">EmbeddingProvider</code> ABC has two methods: <code class="mono text-xs">embed_texts()</code> for document storage and <code class="mono text-xs">embed_query()</code> for search. The <code class="mono text-xs">__init__.py</code> routes through the factory so all existing callers work unchanged.
+            <strong>Registry-based factory</strong> with ABC interface. Built-in providers (Gemini, Bedrock/Titan, OpenAI) are registered at module load. Developers can register custom providers with a single call to <code class="mono text-xs">register_embedding_provider()</code>. The <code class="mono text-xs">__init__.py</code> routes through the factory so all callers work unchanged.
           </p>
           <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4">
             <button class="tab active px-3 py-2 text-xs" onclick="switchTab(this, 'embed-abc')">ABC Interface</button>
-            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'embed-init')">__init__.py Router</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'embed-registry')">Registry Factory</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'embed-custom')">Custom Provider</button>
             <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'embed-files')">All Files</button>
           </div>
           <div id="embed-abc" class="tab-content active">
@@ -385,27 +388,69 @@
             </div>
             <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/embedding/base.py</p>
           </div>
-          <div id="embed-init" class="tab-content">
+          <div id="embed-registry" class="tab-content">
             <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
               <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
-<pre class="mono"><span class="line"><span class="text-gray-500"># layers/embedding/__init__.py</span></span>
-<span class="line"><span class="text-gray-500"># Routes through factory — all existing callers work unchanged</span></span>
-<span class="line"><span class="text-blue-500">from</span> layers.embedding.embedding_factory <span class="text-blue-500">import</span> get_embedding_provider</span>
+<pre class="mono"><span class="line"><span class="text-gray-500"># Registry-based factory — replaces hardcoded if/elif</span></span>
+<span class="line">_registry: dict[<span class="text-blue-500">str</span>, Callable[[], EmbeddingProvider]] = {}</span>
 <span class="line"></span>
-<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">embed_texts</span>(texts):</span>
-<span class="line">    <span class="text-blue-500">return</span> get_embedding_provider().embed_texts(texts)</span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">register_embedding_provider</span>(name, factory, aliases=<span class="text-blue-500">None</span>):</span>
+<span class="line">    _registry[name.lower().strip()] = factory</span>
+<span class="line">    <span class="text-blue-500">for</span> alias <span class="text-blue-500">in</span> (aliases <span class="text-blue-500">or</span> []):</span>
+<span class="line">        _registry[alias.lower().strip()] = factory</span>
 <span class="line"></span>
-<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">embed_query</span>(query):</span>
-<span class="line">    <span class="text-blue-500">return</span> get_embedding_provider().embed_query(query)</span></pre>
+<span class="line"><span class="text-gray-500"># Built-in registrations at module load</span></span>
+<span class="line">register_embedding_provider(<span class="text-green-600 dark:text-green-400">"gemini"</span>, _gemini)</span>
+<span class="line">register_embedding_provider(<span class="text-green-600 dark:text-green-400">"bedrock"</span>, _bedrock,</span>
+<span class="line">    aliases=[<span class="text-green-600 dark:text-green-400">"aws_bedrock"</span>, <span class="text-green-600 dark:text-green-400">"aws"</span>, <span class="text-green-600 dark:text-green-400">"titan"</span>])</span>
+<span class="line">register_embedding_provider(<span class="text-green-600 dark:text-green-400">"openai"</span>, _openai)</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">get_embedding_provider</span>() -> EmbeddingProvider:</span>
+<span class="line">    <span class="text-gray-500">"""Singleton — looks up EMBEDDING_BACKEND in registry."""</span></span>
+<span class="line">    backend = EMBEDDING_BACKEND.lower().strip()</span>
+<span class="line">    _instance = _registry[backend]()  <span class="text-gray-500"># dict lookup, no if/elif</span></span>
+<span class="line">    <span class="text-blue-500">return</span> _instance</span></pre>
             </div>
-            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/embedding/__init__.py — thin wrappers for backward compat</p>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/embedding/embedding_factory.py</p>
+            <div class="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <p class="text-xs text-amber-700 dark:text-amber-300"><strong>Built-in aliases:</strong> gemini, bedrock, aws_bedrock, aws, <strong>titan</strong>, openai</p>
+              <p class="text-[11px] text-amber-600 dark:text-amber-400 mt-1">Set <code class="mono">EMBEDDING_BACKEND=titan</code> to use AWS Titan Embeddings (amazon.titan-embed-text-v2:0)</p>
+            </div>
+          </div>
+          <div id="embed-custom" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-gray-500"># 1. Implement the ABC</span></span>
+<span class="line"><span class="text-blue-500">class</span> <span class="text-amber-600 dark:text-amber-400">MyCustomEmbedder</span>(EmbeddingProvider):</span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">embed_texts</span>(self, texts):</span>
+<span class="line">        <span class="text-blue-500">return</span> [my_api.embed(t) <span class="text-blue-500">for</span> t <span class="text-blue-500">in</span> texts]</span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">embed_query</span>(self, query):</span>
+<span class="line">        <span class="text-blue-500">return</span> my_api.embed(query)</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 2. Register it (one line)</span></span>
+<span class="line"><span class="text-blue-500">from</span> layers.embedding <span class="text-blue-500">import</span> register_embedding_provider</span>
+<span class="line">register_embedding_provider(</span>
+<span class="line">    <span class="text-green-600 dark:text-green-400">"my_custom"</span>,</span>
+<span class="line">    <span class="text-blue-500">lambda</span>: MyCustomEmbedder(),</span>
+<span class="line">    aliases=[<span class="text-green-600 dark:text-green-400">"custom"</span>],</span>
+<span class="line">)</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 3. Set env var</span></span>
+<span class="line"><span class="text-blue-500">export</span> EMBEDDING_BACKEND=my_custom</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 4. List all registered providers</span></span>
+<span class="line"><span class="text-blue-500">from</span> layers.embedding <span class="text-blue-500">import</span> list_registered_providers</span>
+<span class="line">print(list_registered_providers())</span>
+<span class="line"><span class="text-gray-500"># ['aws', 'aws_bedrock', 'bedrock', 'gemini', 'my_custom', ...]</span></span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">3 steps to add a custom embedding provider — no factory code changes needed</p>
           </div>
           <div id="embed-files" class="tab-content">
             <div class="space-y-2">
               <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/base.py</div><div class="text-[11px] text-gray-500">EmbeddingProvider ABC</div></div></div>
-              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/embedding_factory.py</div><div class="text-[11px] text-gray-500">Singleton factory — reads EMBEDDING_BACKEND</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/embedding_factory.py</div><div class="text-[11px] text-gray-500">Registry-based factory — register_embedding_provider() + get_embedding_provider()</div></div></div>
               <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/gemini_embedder.py</div><div class="text-[11px] text-gray-500">Gemini embedding (default) + backward-compat module functions</div></div></div>
-              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/bedrock_embedder.py</div><div class="text-[11px] text-gray-500">AWS Titan Embeddings via boto3 invoke_model</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/bedrock_embedder.py</div><div class="text-[11px] text-gray-500">AWS Titan Embeddings via boto3 invoke_model (alias: "titan")</div></div></div>
               <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/openai_embedder.py</div><div class="text-[11px] text-gray-500">OpenAI text-embedding-3, batched (100 per call)</div></div></div>
             </div>
           </div>
@@ -553,35 +598,90 @@
           <div class="w-9 h-9 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-500 text-lg">&#128196;</div>
           <div>
             <h3 class="font-semibold text-sm">Document Parsing</h3>
-            <p class="text-xs text-gray-500 mt-0.5">PDF and DOCX text extraction with page provenance</p>
+            <p class="text-xs text-gray-500 mt-0.5">PDF, DOCX, and Excel text extraction with page provenance</p>
           </div>
         </div>
-        <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">parser.py</span>
+        <div class="flex gap-1.5">
+          <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">PDF</span>
+          <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">DOCX</span>
+          <span class="pill bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">XLSX</span>
+        </div>
       </button>
       <div class="expand-panel">
         <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            Extracts text from PDF (via PyPDF2) and DOCX (via python-docx). Returns <code class="mono text-xs">list[(page_number, text)]</code> tuples. DOCX synthesizes page breaks at ~40 paragraphs since DOCX has no native pages.
+            Extracts text from <strong>PDF</strong> (via pdfplumber — better table/column extraction), <strong>DOCX</strong> (via python-docx), and <strong>Excel</strong> (via openpyxl). Returns <code class="mono text-xs">list[(page_number, text)]</code> tuples. DOCX synthesizes page breaks at ~40 paragraphs. Excel maps each sheet to a "page" with pipe-delimited rows.
           </p>
-          <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
-            <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
-<pre class="mono"><span class="line"><span class="text-blue-500">from</span> PyPDF2 <span class="text-blue-500">import</span> PdfReader</span>
-<span class="line"><span class="text-blue-500">from</span> docx <span class="text-blue-500">import</span> Document <span class="text-blue-500">as</span> DocxDocument</span>
+          <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4">
+            <button class="tab active px-3 py-2 text-xs" onclick="switchTab(this, 'parse-pdf')">PDF (pdfplumber)</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'parse-xlsx')">Excel (openpyxl)</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'parse-auto')">Auto-Detect</button>
+          </div>
+          <div id="parse-pdf" class="tab-content active">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">import</span> pdfplumber</span>
 <span class="line"></span>
 <span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">parse_pdf</span>(filepath) -> list[tuple[<span class="text-blue-500">int</span>, <span class="text-blue-500">str</span>]]:</span>
-<span class="line">    reader = PdfReader(filepath)</span>
 <span class="line">    pages = []</span>
-<span class="line">    <span class="text-blue-500">for</span> i, page <span class="text-blue-500">in</span> enumerate(reader.pages, start=<span class="text-blue-500">1</span>):</span>
-<span class="line">        text = page.extract_text() <span class="text-blue-500">or</span> <span class="text-green-600 dark:text-green-400">""</span></span>
-<span class="line">        <span class="text-blue-500">if</span> text.strip():</span>
-<span class="line">            pages.append((i, text.strip()))</span>
-<span class="line">    <span class="text-blue-500">return</span> pages</span>
-<span class="line"></span>
-<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">parse_document</span>(filepath):  <span class="text-gray-500"># Auto-detect by extension</span></span>
-<span class="line">    <span class="text-blue-500">if</span> ext <span class="text-blue-500">in</span> (<span class="text-green-600 dark:text-green-400">".pdf"</span>,): <span class="text-blue-500">return</span> parse_pdf(filepath)</span>
-<span class="line">    <span class="text-blue-500">if</span> ext <span class="text-blue-500">in</span> (<span class="text-green-600 dark:text-green-400">".docx"</span>, <span class="text-green-600 dark:text-green-400">".doc"</span>): <span class="text-blue-500">return</span> parse_docx(filepath)</span></pre>
+<span class="line">    <span class="text-blue-500">with</span> pdfplumber.open(filepath) <span class="text-blue-500">as</span> pdf:</span>
+<span class="line">        <span class="text-blue-500">for</span> i, page <span class="text-blue-500">in</span> enumerate(pdf.pages, start=<span class="text-blue-500">1</span>):</span>
+<span class="line">            text = page.extract_text() <span class="text-blue-500">or</span> <span class="text-green-600 dark:text-green-400">""</span></span>
+<span class="line">            <span class="text-blue-500">if</span> text.strip():</span>
+<span class="line">                pages.append((i, text.strip()))</span>
+<span class="line">    <span class="text-blue-500">return</span> pages</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/parsing/parser.py — pdfplumber for better table/column extraction</p>
           </div>
-          <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/parsing/parser.py</p>
+          <div id="parse-xlsx" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">from</span> openpyxl <span class="text-blue-500">import</span> load_workbook</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">parse_xlsx</span>(filepath) -> list[tuple[<span class="text-blue-500">int</span>, <span class="text-blue-500">str</span>]]:</span>
+<span class="line">    wb = load_workbook(filepath, read_only=<span class="text-blue-500">True</span>, data_only=<span class="text-blue-500">True</span>)</span>
+<span class="line">    pages = []</span>
+<span class="line">    <span class="text-blue-500">for</span> sheet_num, sheet_name <span class="text-blue-500">in</span> enumerate(wb.sheetnames, start=<span class="text-blue-500">1</span>):</span>
+<span class="line">        ws = wb[sheet_name]</span>
+<span class="line">        rows = [<span class="text-green-600 dark:text-green-400">f"Sheet: {sheet_name}"</span>]</span>
+<span class="line">        <span class="text-blue-500">for</span> row <span class="text-blue-500">in</span> ws.iter_rows(values_only=<span class="text-blue-500">True</span>):</span>
+<span class="line">            cells = [<span class="text-blue-500">str</span>(c).strip() <span class="text-blue-500">for</span> c <span class="text-blue-500">in</span> row <span class="text-blue-500">if</span> c <span class="text-blue-500">is not None</span>]</span>
+<span class="line">            <span class="text-blue-500">if</span> cells:</span>
+<span class="line">                rows.append(<span class="text-green-600 dark:text-green-400">" | "</span>.join(cells))</span>
+<span class="line">        <span class="text-gray-500"># Each sheet = one "page"</span></span>
+<span class="line">        <span class="text-blue-500">if</span> len(rows) > <span class="text-blue-500">1</span>:</span>
+<span class="line">            pages.append((sheet_num, <span class="text-green-600 dark:text-green-400">"\n"</span>.join(rows)))</span>
+<span class="line">    wb.close()</span>
+<span class="line">    <span class="text-blue-500">return</span> pages</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/parsing/parser.py — pipe-delimited rows (matches DOCX table format)</p>
+          </div>
+          <div id="parse-auto" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">parse_document</span>(filepath):  <span class="text-gray-500"># Auto-detect by extension</span></span>
+<span class="line">    ext = Path(filepath).suffix.lower()</span>
+<span class="line">    <span class="text-blue-500">if</span> ext == <span class="text-green-600 dark:text-green-400">".pdf"</span>:   <span class="text-blue-500">return</span> parse_pdf(filepath)</span>
+<span class="line">    <span class="text-blue-500">if</span> ext <span class="text-blue-500">in</span> (<span class="text-green-600 dark:text-green-400">".docx"</span>, <span class="text-green-600 dark:text-green-400">".doc"</span>): <span class="text-blue-500">return</span> parse_docx(filepath)</span>
+<span class="line">    <span class="text-blue-500">if</span> ext == <span class="text-green-600 dark:text-green-400">".xlsx"</span>:  <span class="text-blue-500">return</span> parse_xlsx(filepath)</span>
+<span class="line">    <span class="text-blue-500">raise</span> <span class="text-red-500">ValueError</span>(<span class="text-green-600 dark:text-green-400">f"Unsupported: {ext}"</span>)</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/parsing/parser.py — routes to the right parser</p>
+          </div>
+          <div class="mt-3 grid grid-cols-3 gap-2">
+            <div class="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center">
+              <div class="text-xs font-semibold text-red-500">.pdf</div>
+              <div class="text-[10px] text-gray-500">pdfplumber</div>
+            </div>
+            <div class="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center">
+              <div class="text-xs font-semibold text-blue-500">.docx / .doc</div>
+              <div class="text-[10px] text-gray-500">python-docx</div>
+            </div>
+            <div class="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center">
+              <div class="text-xs font-semibold text-amber-500">.xlsx</div>
+              <div class="text-[10px] text-gray-500">openpyxl</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -984,7 +1084,7 @@
             <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-3">Documents</p>
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
-              <div><span class="mono text-xs font-medium">/api/documents/upload</span><span class="text-[11px] text-gray-500 ml-2">— upload PDF/DOCX, parse, chunk, embed, store</span></div>
+              <div><span class="mono text-xs font-medium">/api/documents/upload</span><span class="text-[11px] text-gray-500 ml-2">— upload PDF/DOCX/Excel, parse, chunk, embed, store</span></div>
             </div>
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 mono">GET</span>
@@ -1010,7 +1110,7 @@
             <p class="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider mt-3">UW Guidelines</p>
             <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
               <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
-              <div><span class="mono text-xs font-medium">/api/guidelines/upload?line_of_business=...</span><span class="text-[11px] text-gray-500 ml-2">— upload guideline PDF/DOCX</span></div>
+              <div><span class="mono text-xs font-medium">/api/guidelines/upload?line_of_business=...</span><span class="text-[11px] text-gray-500 ml-2">— upload guideline PDF/DOCX/Excel</span></div>
             </div>
             <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
               <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 mono">GET</span>
@@ -1061,20 +1161,25 @@
 <span class="line"><span class="text-gray-500"># {"status":"ok","llm_backend":"gemini","embedding_backend":"gemini",</span></span>
 <span class="line"><span class="text-gray-500">#  "vector_store_backend":"lancedb","gemini_configured":true}</span></span>
 <span class="line"></span>
-<span class="line"><span class="text-gray-500"># 4. Run tests (290 tests)</span></span>
+<span class="line"><span class="text-gray-500"># 4. Run tests (305 tests)</span></span>
 <span class="line"><span class="text-blue-500">cd</span> backend && python3 -m pytest tests/ -v</span>
 <span class="line"></span>
-<span class="line"><span class="text-gray-500"># 5. Upload UW guidelines</span></span>
+<span class="line"><span class="text-gray-500"># 5. Upload documents (PDF, DOCX, or Excel)</span></span>
+<span class="line">curl -X POST -F <span class="text-green-600 dark:text-green-400">"file=@Statement_of_Values.xlsx"</span> \</span>
+<span class="line">  <span class="text-green-600 dark:text-green-400">"localhost:8000/api/documents/upload"</span></span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 6. Upload UW guidelines</span></span>
 <span class="line">curl -X POST -F <span class="text-green-600 dark:text-green-400">"file=@Property_UW_Guidelines.docx"</span> \</span>
 <span class="line">  <span class="text-green-600 dark:text-green-400">"localhost:8000/api/guidelines/upload?line_of_business=property"</span></span>
 <span class="line"></span>
-<span class="line"><span class="text-gray-500"># 6. Enforce against a submission</span></span>
+<span class="line"><span class="text-gray-500"># 7. Enforce against a submission</span></span>
 <span class="line">curl -X POST -H <span class="text-green-600 dark:text-green-400">"Content-Type: application/json"</span> \</span>
 <span class="line">  -d <span class="text-green-600 dark:text-green-400">'{"document_id":"...","line_of_business":"property"}'</span> \</span>
 <span class="line">  <span class="text-green-600 dark:text-green-400">"localhost:8000/api/guidelines/enforce"</span></span>
 <span class="line"></span>
-<span class="line"><span class="text-gray-500"># 7. Switch providers</span></span>
+<span class="line"><span class="text-gray-500"># 8. Switch providers (e.g. Titan embeddings)</span></span>
 <span class="line"><span class="text-blue-500">export</span> LLM_BACKEND=openai OPENAI_API_KEY=sk-...</span>
+<span class="line"><span class="text-blue-500">export</span> EMBEDDING_BACKEND=titan  <span class="text-gray-500"># AWS Titan Embeddings</span></span>
 <span class="line"><span class="text-blue-500">export</span> VECTOR_STORE_BACKEND=pgvector</span>
 <span class="line">python3 main.py</span></pre>
           </div>

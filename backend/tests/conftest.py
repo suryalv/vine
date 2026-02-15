@@ -22,6 +22,7 @@ SAMPLE_DOCS_DIR = BACKEND_ROOT.parent / "sample-documents"
 
 SAMPLE_PDFS = sorted(SAMPLE_DOCS_DIR.glob("*.pdf"))
 SAMPLE_DOCX = sorted(SAMPLE_DOCS_DIR.glob("*.docx"))
+SAMPLE_XLSX = sorted(SAMPLE_DOCS_DIR.glob("*.xlsx"))
 
 
 # ─── Fixtures: sample file paths ──────────────────────────────────
@@ -50,6 +51,19 @@ def all_sample_pdf_paths() -> list[str]:
 def all_sample_docx_paths() -> list[str]:
     """Return paths to all sample DOCX files."""
     return [str(p) for p in SAMPLE_DOCX]
+
+
+@pytest.fixture
+def sample_xlsx_path() -> str:
+    """Return path to the first sample XLSX."""
+    assert SAMPLE_XLSX, "No sample XLSX files found in sample-documents/"
+    return str(SAMPLE_XLSX[0])
+
+
+@pytest.fixture
+def all_sample_xlsx_paths() -> list[str]:
+    """Return paths to all sample XLSX files."""
+    return [str(p) for p in SAMPLE_XLSX]
 
 
 # ─── Fixtures: temporary directory ────────────────────────────────

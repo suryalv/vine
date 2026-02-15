@@ -88,13 +88,13 @@ def health():
 
 @app.post("/api/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(file: UploadFile = File(...)):
-    """Upload a PDF or DOCX, parse it, chunk it, and store embeddings in LanceDB."""
+    """Upload a PDF, DOCX, or Excel file, parse it, chunk it, and store embeddings."""
     if not file.filename:
         raise HTTPException(400, "No filename provided")
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in (".pdf", ".docx", ".doc"):
-        raise HTTPException(400, f"Unsupported file type: {ext}. Use PDF or DOCX.")
+    if ext not in (".pdf", ".docx", ".doc", ".xlsx"):
+        raise HTTPException(400, f"Unsupported file type: {ext}. Use PDF, DOCX, or Excel.")
 
     # Save uploaded file to disk
     document_id = str(uuid.uuid4())
@@ -319,13 +319,13 @@ async def upload_guideline(
     file: UploadFile = File(...),
     line_of_business: str = "general",
 ):
-    """Upload a UW guideline document (PDF/DOCX), parse, chunk, and store."""
+    """Upload a UW guideline document (PDF/DOCX/Excel), parse, chunk, and store."""
     if not file.filename:
         raise HTTPException(400, "No filename provided")
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in (".pdf", ".docx", ".doc"):
-        raise HTTPException(400, f"Unsupported file type: {ext}. Use PDF or DOCX.")
+    if ext not in (".pdf", ".docx", ".doc", ".xlsx"):
+        raise HTTPException(400, f"Unsupported file type: {ext}. Use PDF, DOCX, or Excel.")
 
     guideline_id = str(uuid.uuid4())
     save_path = GUIDELINES_UPLOAD_DIR / f"{guideline_id}{ext}"

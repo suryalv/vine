@@ -13,7 +13,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from layers.embedding.embedding_factory import get_embedding_provider, reset_embedding_provider
+from layers.embedding.embedding_factory import (
+    get_embedding_provider,
+    reset_embedding_provider,
+    register_embedding_provider,
+    list_registered_providers,
+)
 from layers.embedding.base import EmbeddingProvider
 
 
@@ -124,3 +129,79 @@ class TestEmbeddingFactoryInputNormalization:
         from layers.embedding.openai_embedder import OpenAIEmbeddingProvider
 
         assert isinstance(provider, OpenAIEmbeddingProvider)
+
+
+# ─── Titan alias ─────────────────────────────────────────────────
+
+
+class TestEmbeddingFactoryTitanAlias:
+    @patch("config.EMBEDDING_BACKEND", "titan")
+    def test_titan_returns_bedrock_provider(self):
+        provider = get_embedding_provider()
+        from layers.embedding.bedrock_embedder import BedrockEmbeddingProvider
+
+        assert isinstance(provider, BedrockEmbeddingProvider)
+
+    @patch("config.EMBEDDING_BACKEND", "TITAN")
+    def test_titan_case_insensitive(self):
+        provider = get_embedding_provider()
+        from layers.embedding.bedrock_embedder import BedrockEmbeddingProvider
+
+        assert isinstance(provider, BedrockEmbeddingProvider)
+
+
+# ─── Custom provider registration ───────────────────────────────
+
+
+class TestEmbeddingFactoryCustomRegistration:
+    def test_register_custom_provider(self):
+        class StubProvider(EmbeddingProvider):
+            def embed_texts(self, texts):
+                return [[0.0] * 3 for _ in texts]
+
+            def embed_query(self, query):
+                return [0.0] * 3
+
+        register_embedding_provider("stub_test", lambda: StubProvider())
+
+        with patch("config.EMBEDDING_BACKEND", "stub_test"):
+            provider = get_embedding_provider()
+            assert isinstance(provider, StubProvider)
+            assert provider.embed_query("hello") == [0.0] * 3
+
+    def test_register_custom_with_aliases(self):
+        class AnotherProvider(EmbeddingProvider):
+            def embed_texts(self, texts):
+                return [[1.0] for _ in texts]
+
+            def embed_query(self, query):
+                return [1.0]
+
+        register_embedding_provider(
+            "another_test", lambda: AnotherProvider(), aliases=["alt_test"]
+        )
+
+        with patch("config.EMBEDDING_BACKEND", "alt_test"):
+            provider = get_embedding_provider()
+            assert isinstance(provider, AnotherProvider)
+
+    def test_list_registered_providers_includes_builtins(self):
+        names = list_registered_providers()
+        assert "gemini" in names
+        assert "bedrock" in names
+        assert "openai" in names
+        assert "titan" in names
+        assert "aws_bedrock" in names
+        assert "aws" in names
+
+    def test_list_registered_providers_includes_custom(self):
+        class CustomProvider(EmbeddingProvider):
+            def embed_texts(self, texts):
+                return [[0.0] for _ in texts]
+
+            def embed_query(self, query):
+                return [0.0]
+
+        register_embedding_provider("my_custom_test", lambda: CustomProvider())
+        names = list_registered_providers()
+        assert "my_custom_test" in names
