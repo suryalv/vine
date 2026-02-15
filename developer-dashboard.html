@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UW Companion — Developer Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { accent: '#2563eb', accent2: '#7c3aed' } } }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    code, pre, .mono { font-family: 'JetBrains Mono', monospace; }
+
+    .feature-card { transition: all 0.2s ease; }
+    .feature-card:hover { transform: translateY(-1px); box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+    .dark .feature-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+
+    .expand-panel {
+      max-height: 0; overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+      opacity: 0;
+    }
+    .expand-panel.open { max-height: 8000px; opacity: 1; }
+
+    .code-block { position: relative; }
+    .code-block .line { display: block; }
+
+    .tab { transition: all 0.15s ease; cursor: pointer; }
+    .tab.active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
+    .dark .tab.active { color: #60a5fa; border-color: #60a5fa; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .arrow { transition: transform 0.3s ease; display: inline-block; }
+    .arrow.rotated { transform: rotate(90deg); }
+
+    .pill { font-size: 0.65rem; padding: 2px 8px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
+
+    .copy-btn {
+      opacity: 0; transition: opacity 0.2s;
+      position: absolute; top: 8px; right: 8px;
+    }
+    .code-block:hover .copy-btn { opacity: 1; }
+
+    pre::-webkit-scrollbar { height: 6px; }
+    pre::-webkit-scrollbar-track { background: transparent; }
+    pre::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+    .dark pre::-webkit-scrollbar-thumb { background: #374151; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-[#0f1117] dark:text-gray-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-white/90 dark:bg-[#0f1117]/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent2 flex items-center justify-center">
+          <span class="text-white text-sm font-bold">UW</span>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold">Developer Dashboard</h1>
+          <p class="text-[11px] text-gray-400">Click any feature to explore code &amp; configuration</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <input id="globalSearch" type="text" placeholder="Search features..."
+               class="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg
+                      bg-gray-50 dark:bg-gray-800/50 w-56 outline-none focus:ring-2 focus:ring-accent/30
+                      focus:border-accent" />
+        <button onclick="toggleTheme()"
+                class="w-8 h-8 flex items-center justify-center border border-gray-200 dark:border-gray-700
+                       rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition text-sm" id="themeBtn"
+                title="Toggle theme">
+          <span id="themeIcon">&#9789;</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Quick Stats -->
+  <div class="max-w-5xl mx-auto px-6 pt-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+        <div class="text-2xl font-bold text-accent">9</div>
+        <div class="text-xs text-gray-500 mt-1">Features</div>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+        <div class="text-2xl font-bold text-accent2">3</div>
+        <div class="text-xs text-gray-500 mt-1">LLM Providers</div>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+        <div class="text-2xl font-bold text-green-500">268</div>
+        <div class="text-xs text-gray-500 mt-1">Tests Passing</div>
+      </div>
+      <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+        <div class="text-2xl font-bold text-amber-500">30+</div>
+        <div class="text-xs text-gray-500 mt-1">Env Variables</div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-6 py-6 space-y-3" id="features">
+
+    <!-- ══════════ FEATURE 1: Configuration ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="configuration">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 text-lg">&#9881;</div>
+          <div>
+            <h3 class="font-semibold text-sm">Configuration</h3>
+            <p class="text-xs text-gray-500 mt-0.5">30+ environment variables — all in one file, all with defaults</p>
+          </div>
+        </div>
+        <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">config.py</span>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Every setting is read from environment variables with sensible defaults. Change any provider, model, dimension, or port — without touching code. Just set the env var and restart.
+          </p>
+          <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4">
+            <button class="tab active px-3 py-2 text-xs" onclick="switchTab(this, 'config-code')">Source Code</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'config-vars')">All Variables</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'config-usage')">Usage</button>
+          </div>
+          <div id="config-code" class="tab-content active">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-gray-500">import</span> os</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── LLM Backend ─────────────────────────────────</span></span>
+<span class="line">LLM_BACKEND = os.getenv(<span class="text-green-600 dark:text-green-400">"LLM_BACKEND"</span>, <span class="text-green-600 dark:text-green-400">"gemini"</span>)</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── Embedding Backend ───────────────────────────</span></span>
+<span class="line">EMBEDDING_BACKEND = os.getenv(<span class="text-green-600 dark:text-green-400">"EMBEDDING_BACKEND"</span>, <span class="text-green-600 dark:text-green-400">"gemini"</span>)</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── Gemini ──────────────────────────────────────</span></span>
+<span class="line">GEMINI_API_KEY    = os.getenv(<span class="text-green-600 dark:text-green-400">"GEMINI_API_KEY"</span>, <span class="text-green-600 dark:text-green-400">"..."</span>)</span>
+<span class="line">GEMINI_CHAT_MODEL = os.getenv(<span class="text-green-600 dark:text-green-400">"GEMINI_CHAT_MODEL"</span>, <span class="text-green-600 dark:text-green-400">"gemini-2.0-flash"</span>)</span>
+<span class="line">GEMINI_EMBED_MODEL= os.getenv(<span class="text-green-600 dark:text-green-400">"GEMINI_EMBED_MODEL"</span>, <span class="text-green-600 dark:text-green-400">"models/gemini-embedding-001"</span>)</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── AWS Bedrock ─────────────────────────────────</span></span>
+<span class="line">AWS_REGION         = os.getenv(<span class="text-green-600 dark:text-green-400">"AWS_REGION"</span>, <span class="text-green-600 dark:text-green-400">"us-east-1"</span>)</span>
+<span class="line">BEDROCK_CHAT_MODEL = os.getenv(<span class="text-green-600 dark:text-green-400">"BEDROCK_CHAT_MODEL"</span>, <span class="text-green-600 dark:text-green-400">"anthropic.claude-3-sonnet-..."</span>)</span>
+<span class="line">BEDROCK_EMBED_MODEL= os.getenv(<span class="text-green-600 dark:text-green-400">"BEDROCK_EMBED_MODEL"</span>, <span class="text-green-600 dark:text-green-400">"amazon.titan-embed-text-v2:0"</span>)</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── OpenAI ──────────────────────────────────────</span></span>
+<span class="line">OPENAI_API_KEY    = os.getenv(<span class="text-green-600 dark:text-green-400">"OPENAI_API_KEY"</span>, <span class="text-green-600 dark:text-green-400">""</span>)</span>
+<span class="line">OPENAI_CHAT_MODEL = os.getenv(<span class="text-green-600 dark:text-green-400">"OPENAI_CHAT_MODEL"</span>, <span class="text-green-600 dark:text-green-400">"gpt-4o"</span>)</span>
+<span class="line">OPENAI_EMBED_MODEL= os.getenv(<span class="text-green-600 dark:text-green-400">"OPENAI_EMBED_MODEL"</span>, <span class="text-green-600 dark:text-green-400">"text-embedding-3-large"</span>)</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── Vector Store ────────────────────────────────</span></span>
+<span class="line">VECTOR_STORE_BACKEND = os.getenv(<span class="text-green-600 dark:text-green-400">"VECTOR_STORE_BACKEND"</span>, <span class="text-green-600 dark:text-green-400">"lancedb"</span>)</span>
+<span class="line">LANCE_DB_PATH        = os.getenv(<span class="text-green-600 dark:text-green-400">"LANCE_DB_PATH"</span>, <span class="text-green-600 dark:text-green-400">"/tmp/uw_companion_lancedb"</span>)</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── RAG ─────────────────────────────────────────</span></span>
+<span class="line">CHUNK_SIZE    = <span class="text-blue-500">int</span>(os.getenv(<span class="text-green-600 dark:text-green-400">"CHUNK_SIZE"</span>, <span class="text-green-600 dark:text-green-400">"512"</span>))</span>
+<span class="line">CHUNK_OVERLAP = <span class="text-blue-500">int</span>(os.getenv(<span class="text-green-600 dark:text-green-400">"CHUNK_OVERLAP"</span>, <span class="text-green-600 dark:text-green-400">"64"</span>))</span>
+<span class="line">TOP_K_RESULTS = <span class="text-blue-500">int</span>(os.getenv(<span class="text-green-600 dark:text-green-400">"TOP_K_RESULTS"</span>, <span class="text-green-600 dark:text-green-400">"8"</span>))</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── API ─────────────────────────────────────────</span></span>
+<span class="line">API_HOST = os.getenv(<span class="text-green-600 dark:text-green-400">"API_HOST"</span>, <span class="text-green-600 dark:text-green-400">"0.0.0.0"</span>)</span>
+<span class="line">API_PORT = <span class="text-blue-500">int</span>(os.getenv(<span class="text-green-600 dark:text-green-400">"API_PORT"</span>, <span class="text-green-600 dark:text-green-400">"8000"</span>))</span>
+<span class="line">CORS_ORIGINS = os.getenv(<span class="text-green-600 dark:text-green-400">"CORS_ORIGINS"</span>, <span class="text-green-600 dark:text-green-400">"http://localhost:4200,..."</span>).split(<span class="text-green-600 dark:text-green-400">","</span>)</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/config.py</p>
+          </div>
+          <div id="config-vars" class="tab-content">
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs"><thead><tr class="border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 px-2 font-semibold text-gray-500">Variable</th><th class="text-left py-2 px-2 font-semibold text-gray-500">Default</th><th class="text-left py-2 px-2 font-semibold text-gray-500">Options</th></tr></thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                <tr><td class="py-2 px-2 mono text-accent">LLM_BACKEND</td><td class="py-2 px-2 mono">gemini</td><td class="py-2 px-2">gemini, bedrock, openai</td></tr>
+                <tr><td class="py-2 px-2 mono text-accent">EMBEDDING_BACKEND</td><td class="py-2 px-2 mono">gemini</td><td class="py-2 px-2">gemini, bedrock, openai</td></tr>
+                <tr><td class="py-2 px-2 mono text-accent">VECTOR_STORE_BACKEND</td><td class="py-2 px-2 mono">lancedb</td><td class="py-2 px-2">lancedb, pgvector, mongodb_atlas</td></tr>
+                <tr><td class="py-2 px-2 mono">GEMINI_API_KEY</td><td class="py-2 px-2 mono">(set)</td><td class="py-2 px-2">API key string</td></tr>
+                <tr><td class="py-2 px-2 mono">GEMINI_CHAT_MODEL</td><td class="py-2 px-2 mono">gemini-2.0-flash</td><td class="py-2 px-2">Any Gemini model</td></tr>
+                <tr><td class="py-2 px-2 mono">GEMINI_EMBED_MODEL</td><td class="py-2 px-2 mono">models/gemini-embedding-001</td><td class="py-2 px-2">Any Gemini embed model</td></tr>
+                <tr><td class="py-2 px-2 mono">AWS_REGION</td><td class="py-2 px-2 mono">us-east-1</td><td class="py-2 px-2">Any AWS region</td></tr>
+                <tr><td class="py-2 px-2 mono">BEDROCK_CHAT_MODEL</td><td class="py-2 px-2 mono">anthropic.claude-3-sonnet-...</td><td class="py-2 px-2">Any Bedrock model</td></tr>
+                <tr><td class="py-2 px-2 mono">BEDROCK_EMBED_MODEL</td><td class="py-2 px-2 mono">amazon.titan-embed-text-v2:0</td><td class="py-2 px-2">Any Bedrock embed model</td></tr>
+                <tr><td class="py-2 px-2 mono">OPENAI_API_KEY</td><td class="py-2 px-2 mono">(empty)</td><td class="py-2 px-2">API key string</td></tr>
+                <tr><td class="py-2 px-2 mono">OPENAI_CHAT_MODEL</td><td class="py-2 px-2 mono">gpt-4o</td><td class="py-2 px-2">Any OpenAI model</td></tr>
+                <tr><td class="py-2 px-2 mono">OPENAI_EMBED_MODEL</td><td class="py-2 px-2 mono">text-embedding-3-large</td><td class="py-2 px-2">Any OpenAI embed model</td></tr>
+                <tr><td class="py-2 px-2 mono">EMBEDDING_DIM</td><td class="py-2 px-2 mono">3072</td><td class="py-2 px-2">Integer (match model)</td></tr>
+                <tr><td class="py-2 px-2 mono">CHUNK_SIZE</td><td class="py-2 px-2 mono">512</td><td class="py-2 px-2">Integer (tokens)</td></tr>
+                <tr><td class="py-2 px-2 mono">CHUNK_OVERLAP</td><td class="py-2 px-2 mono">64</td><td class="py-2 px-2">Integer (tokens)</td></tr>
+                <tr><td class="py-2 px-2 mono">TOP_K_RESULTS</td><td class="py-2 px-2 mono">8</td><td class="py-2 px-2">Integer</td></tr>
+                <tr><td class="py-2 px-2 mono">LANCE_DB_PATH</td><td class="py-2 px-2 mono">/tmp/uw_companion_lancedb</td><td class="py-2 px-2">Filesystem path</td></tr>
+                <tr><td class="py-2 px-2 mono">PGVECTOR_CONNECTION_STRING</td><td class="py-2 px-2 mono">postgresql://localhost:5432/...</td><td class="py-2 px-2">PostgreSQL URI</td></tr>
+                <tr><td class="py-2 px-2 mono">MONGODB_URI</td><td class="py-2 px-2 mono">mongodb://localhost:27017</td><td class="py-2 px-2">MongoDB URI</td></tr>
+                <tr><td class="py-2 px-2 mono">API_HOST</td><td class="py-2 px-2 mono">0.0.0.0</td><td class="py-2 px-2">IP / hostname</td></tr>
+                <tr><td class="py-2 px-2 mono">API_PORT</td><td class="py-2 px-2 mono">8000</td><td class="py-2 px-2">Integer</td></tr>
+                <tr><td class="py-2 px-2 mono">CORS_ORIGINS</td><td class="py-2 px-2 mono">http://localhost:4200,...</td><td class="py-2 px-2">Comma-separated URLs</td></tr>
+              </tbody></table>
+            </div>
+          </div>
+          <div id="config-usage" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-gray-500"># Switch to OpenAI for LLM + Bedrock for embeddings</span></span>
+<span class="line"><span class="text-blue-500">export</span> LLM_BACKEND=openai</span>
+<span class="line"><span class="text-blue-500">export</span> OPENAI_API_KEY=sk-...</span>
+<span class="line"><span class="text-blue-500">export</span> EMBEDDING_BACKEND=bedrock</span>
+<span class="line"><span class="text-blue-500">export</span> AWS_REGION=us-west-2</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># Use MongoDB Atlas instead of LanceDB</span></span>
+<span class="line"><span class="text-blue-500">export</span> VECTOR_STORE_BACKEND=mongodb_atlas</span>
+<span class="line"><span class="text-blue-500">export</span> MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net</span>
+<span class="line"></span>
+<span class="line">python3 main.py</span></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 2: LLM Provider ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="llm-provider">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-500 text-lg">&#9733;</div>
+          <div>
+            <h3 class="font-semibold text-sm">LLM Provider</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Swap between Gemini, Bedrock, OpenAI with one env var</p>
+          </div>
+        </div>
+        <div class="flex gap-1.5">
+          <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">Gemini</span>
+          <span class="pill bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">Bedrock</span>
+          <span class="pill bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">OpenAI</span>
+        </div>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Uses the <strong>ABC + Factory + Singleton</strong> pattern. The factory reads <code class="mono text-accent text-xs">LLM_BACKEND</code> from config, lazily imports the right provider, and returns a singleton. All providers implement the same <code class="mono text-xs">LLMProvider</code> interface.
+          </p>
+          <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4">
+            <button class="tab active px-3 py-2 text-xs" onclick="switchTab(this, 'llm-abc')">ABC Interface</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'llm-factory')">Factory</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'llm-gemini')">Gemini Impl</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'llm-files')">All Files</button>
+          </div>
+          <div id="llm-abc" class="tab-content active">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">from</span> abc <span class="text-blue-500">import</span> ABC, abstractmethod</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">class</span> <span class="text-amber-600 dark:text-amber-400">LLMProvider</span>(ABC):</span>
+<span class="line">    <span class="text-gray-500">"""Abstract interface for LLM providers."""</span></span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">generate</span>(self, user_prompt, system_prompt=<span class="text-green-600 dark:text-green-400">""</span>, chat_history=<span class="text-blue-500">None</span>) -> <span class="text-blue-500">str</span>:</span>
+<span class="line">        <span class="text-gray-500">"""Generate response with system prompt + chat history."""</span></span>
+<span class="line">        ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">generate_simple</span>(self, prompt: <span class="text-blue-500">str</span>) -> <span class="text-blue-500">str</span>:</span>
+<span class="line">        <span class="text-gray-500">"""Simple prompt -> response (used for action extraction)."""</span></span>
+<span class="line">        ...</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/generation/base.py</p>
+          </div>
+          <div id="llm-factory" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line">_instance: Optional[LLMProvider] = <span class="text-blue-500">None</span></span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">get_llm_provider</span>() -> LLMProvider:</span>
+<span class="line">    <span class="text-gray-500">"""Return the configured LLM provider (singleton)."""</span></span>
+<span class="line">    <span class="text-blue-500">global</span> _instance</span>
+<span class="line">    <span class="text-blue-500">if</span> _instance <span class="text-blue-500">is not None</span>:</span>
+<span class="line">        <span class="text-blue-500">return</span> _instance</span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">from</span> config <span class="text-blue-500">import</span> LLM_BACKEND</span>
+<span class="line">    backend = LLM_BACKEND.lower().strip()</span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">if</span> backend == <span class="text-green-600 dark:text-green-400">"gemini"</span>:</span>
+<span class="line">        <span class="text-blue-500">from</span> layers.generation.gemini_llm <span class="text-blue-500">import</span> GeminiLLMProvider</span>
+<span class="line">        _instance = GeminiLLMProvider()</span>
+<span class="line">    <span class="text-blue-500">elif</span> backend <span class="text-blue-500">in</span> (<span class="text-green-600 dark:text-green-400">"bedrock"</span>, <span class="text-green-600 dark:text-green-400">"aws_bedrock"</span>, <span class="text-green-600 dark:text-green-400">"aws"</span>):</span>
+<span class="line">        <span class="text-blue-500">from</span> layers.generation.bedrock_llm <span class="text-blue-500">import</span> BedrockLLMProvider</span>
+<span class="line">        _instance = BedrockLLMProvider()</span>
+<span class="line">    <span class="text-blue-500">elif</span> backend == <span class="text-green-600 dark:text-green-400">"openai"</span>:</span>
+<span class="line">        <span class="text-blue-500">from</span> layers.generation.openai_llm <span class="text-blue-500">import</span> OpenAILLMProvider</span>
+<span class="line">        _instance = OpenAILLMProvider()</span>
+<span class="line">    <span class="text-blue-500">else</span>:</span>
+<span class="line">        <span class="text-blue-500">raise</span> <span class="text-red-500">ValueError</span>(<span class="text-green-600 dark:text-green-400">f"Unknown LLM_BACKEND: '{backend}'"</span>)</span>
+<span class="line">    <span class="text-blue-500">return</span> _instance</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/generation/llm_factory.py</p>
+          </div>
+          <div id="llm-gemini" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">import</span> google.generativeai <span class="text-blue-500">as</span> genai</span>
+<span class="line"><span class="text-blue-500">from</span> config <span class="text-blue-500">import</span> GEMINI_API_KEY, GEMINI_CHAT_MODEL</span>
+<span class="line"><span class="text-blue-500">from</span> layers.generation.base <span class="text-blue-500">import</span> LLMProvider</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">class</span> <span class="text-amber-600 dark:text-amber-400">GeminiLLMProvider</span>(LLMProvider):</span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">__init__</span>(self, model_name=GEMINI_CHAT_MODEL, api_key=GEMINI_API_KEY):</span>
+<span class="line">        self._model_name = model_name</span>
+<span class="line">        self._api_key = api_key</span>
+<span class="line">        self._configured = <span class="text-blue-500">False</span></span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">generate</span>(self, user_prompt, system_prompt=<span class="text-green-600 dark:text-green-400">""</span>, chat_history=<span class="text-blue-500">None</span>):</span>
+<span class="line">        self._ensure_configured()</span>
+<span class="line">        model = genai.GenerativeModel(self._model_name,</span>
+<span class="line">            system_instruction=system_prompt <span class="text-blue-500">if</span> system_prompt <span class="text-blue-500">else None</span>)</span>
+<span class="line">        history = []</span>
+<span class="line">        <span class="text-blue-500">if</span> chat_history:</span>
+<span class="line">            <span class="text-blue-500">for</span> msg <span class="text-blue-500">in</span> chat_history:</span>
+<span class="line">                role = <span class="text-green-600 dark:text-green-400">"user"</span> <span class="text-blue-500">if</span> msg[<span class="text-green-600 dark:text-green-400">"role"</span>] == <span class="text-green-600 dark:text-green-400">"user"</span> <span class="text-blue-500">else</span> <span class="text-green-600 dark:text-green-400">"model"</span></span>
+<span class="line">                history.append({<span class="text-green-600 dark:text-green-400">"role"</span>: role, <span class="text-green-600 dark:text-green-400">"parts"</span>: [msg[<span class="text-green-600 dark:text-green-400">"content"</span>]]})</span>
+<span class="line">        chat = model.start_chat(history=history)</span>
+<span class="line">        response = chat.send_message(user_prompt)</span>
+<span class="line">        <span class="text-blue-500">return</span> response.text</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/generation/gemini_llm.py</p>
+          </div>
+          <div id="llm-files" class="tab-content">
+            <div class="space-y-2">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/generation/base.py</div><div class="text-[11px] text-gray-500">LLMProvider ABC — the interface all providers implement</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/generation/llm_factory.py</div><div class="text-[11px] text-gray-500">Singleton factory — reads LLM_BACKEND, returns provider</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/generation/gemini_llm.py</div><div class="text-[11px] text-gray-500">Google Gemini — uses genai SDK, start_chat, send_message</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/generation/bedrock_llm.py</div><div class="text-[11px] text-gray-500">AWS Bedrock — uses boto3, Anthropic messages format</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/generation/openai_llm.py</div><div class="text-[11px] text-gray-500">OpenAI — uses openai SDK, chat.completions.create</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 3: Embedding Provider ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="embedding-provider">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-500 text-lg">&#8644;</div>
+          <div>
+            <h3 class="font-semibold text-sm">Embedding Provider</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Gemini, Bedrock Titan, or OpenAI text-embedding-3</p>
+          </div>
+        </div>
+        <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">EMBEDDING_BACKEND</span>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Same ABC + Factory pattern as LLM. The <code class="mono text-xs">EmbeddingProvider</code> ABC has two methods: <code class="mono text-xs">embed_texts()</code> for document storage and <code class="mono text-xs">embed_query()</code> for search. The <code class="mono text-xs">__init__.py</code> routes through the factory so all existing callers work unchanged.
+          </p>
+          <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4">
+            <button class="tab active px-3 py-2 text-xs" onclick="switchTab(this, 'embed-abc')">ABC Interface</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'embed-init')">__init__.py Router</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'embed-files')">All Files</button>
+          </div>
+          <div id="embed-abc" class="tab-content active">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">class</span> <span class="text-amber-600 dark:text-amber-400">EmbeddingProvider</span>(ABC):</span>
+<span class="line">    <span class="text-gray-500">"""Abstract interface for embedding providers."""</span></span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">embed_texts</span>(self, texts: list[<span class="text-blue-500">str</span>]) -> list[list[<span class="text-blue-500">float</span>]]:</span>
+<span class="line">        <span class="text-gray-500">"""Embed a batch of texts for document storage."""</span></span>
+<span class="line">        ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">embed_query</span>(self, query: <span class="text-blue-500">str</span>) -> list[<span class="text-blue-500">float</span>]:</span>
+<span class="line">        <span class="text-gray-500">"""Embed a single query for search."""</span></span>
+<span class="line">        ...</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/embedding/base.py</p>
+          </div>
+          <div id="embed-init" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-gray-500"># layers/embedding/__init__.py</span></span>
+<span class="line"><span class="text-gray-500"># Routes through factory — all existing callers work unchanged</span></span>
+<span class="line"><span class="text-blue-500">from</span> layers.embedding.embedding_factory <span class="text-blue-500">import</span> get_embedding_provider</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">embed_texts</span>(texts):</span>
+<span class="line">    <span class="text-blue-500">return</span> get_embedding_provider().embed_texts(texts)</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">embed_query</span>(query):</span>
+<span class="line">    <span class="text-blue-500">return</span> get_embedding_provider().embed_query(query)</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/embedding/__init__.py — thin wrappers for backward compat</p>
+          </div>
+          <div id="embed-files" class="tab-content">
+            <div class="space-y-2">
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/base.py</div><div class="text-[11px] text-gray-500">EmbeddingProvider ABC</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/embedding_factory.py</div><div class="text-[11px] text-gray-500">Singleton factory — reads EMBEDDING_BACKEND</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/gemini_embedder.py</div><div class="text-[11px] text-gray-500">Gemini embedding (default) + backward-compat module functions</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/bedrock_embedder.py</div><div class="text-[11px] text-gray-500">AWS Titan Embeddings via boto3 invoke_model</div></div></div>
+              <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/embedding/openai_embedder.py</div><div class="text-[11px] text-gray-500">OpenAI text-embedding-3, batched (100 per call)</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 4: Vector Store ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="vector-store">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-500 text-lg">&#128451;</div>
+          <div>
+            <h3 class="font-semibold text-sm">Vector Store</h3>
+            <p class="text-xs text-gray-500 mt-0.5">LanceDB, PgVector, or MongoDB Atlas — plug and play</p>
+          </div>
+        </div>
+        <span class="pill bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">VECTOR_STORE_BACKEND</span>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            The <code class="mono text-xs">VectorStore</code> ABC defines 5 methods: <code class="mono text-xs">store_chunks</code>, <code class="mono text-xs">search</code>, <code class="mono text-xs">get_all_documents</code>, <code class="mono text-xs">delete_document</code>, <code class="mono text-xs">get_chunks_by_document</code>. All stores implement the full interface.
+          </p>
+          <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4">
+            <button class="tab active px-3 py-2 text-xs" onclick="switchTab(this, 'vs-abc')">ABC Interface</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'vs-factory')">Factory</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'vs-switch')">How to Switch</button>
+          </div>
+          <div id="vs-abc" class="tab-content active">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">class</span> <span class="text-amber-600 dark:text-amber-400">VectorStore</span>(ABC):</span>
+<span class="line">    <span class="text-gray-500">"""Abstract interface for vector store backends."""</span></span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">store_chunks</span>(self, chunks, document_id, filename, num_pages) -> <span class="text-blue-500">int</span>: ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">search</span>(self, query, top_k=<span class="text-blue-500">8</span>) -> List[Dict]: ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">get_all_documents</span>(self) -> List[Dict]: ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">delete_document</span>(self, document_id) -> <span class="text-blue-500">bool</span>: ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-purple-500">@abstractmethod</span></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">get_chunks_by_document</span>(self, document_id) -> List[Dict]: ...</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/vectorization/base.py</p>
+          </div>
+          <div id="vs-factory" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">get_vector_store</span>() -> VectorStore:</span>
+<span class="line">    <span class="text-blue-500">global</span> _instance</span>
+<span class="line">    <span class="text-blue-500">if</span> _instance <span class="text-blue-500">is not None</span>: <span class="text-blue-500">return</span> _instance</span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">from</span> config <span class="text-blue-500">import</span> VECTOR_STORE_BACKEND</span>
+<span class="line">    backend = VECTOR_STORE_BACKEND.lower().strip()</span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">if</span> backend == <span class="text-green-600 dark:text-green-400">"lancedb"</span>:      <span class="text-gray-500"># Default — zero setup</span></span>
+<span class="line">        _instance = LanceDBStore()</span>
+<span class="line">    <span class="text-blue-500">elif</span> backend == <span class="text-green-600 dark:text-green-400">"pgvector"</span>:    <span class="text-gray-500"># PostgreSQL + pgvector</span></span>
+<span class="line">        _instance = PgVectorStore()</span>
+<span class="line">    <span class="text-blue-500">elif</span> backend <span class="text-blue-500">in</span> (<span class="text-green-600 dark:text-green-400">"mongodb_atlas"</span>, <span class="text-green-600 dark:text-green-400">"mongodb"</span>):</span>
+<span class="line">        _instance = MongoDBAtlasStore()</span>
+<span class="line">    <span class="text-blue-500">return</span> _instance</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/vectorization/factory.py</p>
+          </div>
+          <div id="vs-switch" class="tab-content">
+            <div class="space-y-3">
+              <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+                <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-gray-500"># Switch to PostgreSQL</span></span>
+<span class="line"><span class="text-blue-500">export</span> VECTOR_STORE_BACKEND=pgvector</span>
+<span class="line"><span class="text-blue-500">export</span> PGVECTOR_CONNECTION_STRING=postgresql://user:pass@host:5432/db</span>
+<span class="line"><span class="text-gray-500"># Requires: pip install psycopg2-binary</span></span></pre>
+              </div>
+              <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+                <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-gray-500"># Switch to MongoDB Atlas</span></span>
+<span class="line"><span class="text-blue-500">export</span> VECTOR_STORE_BACKEND=mongodb_atlas</span>
+<span class="line"><span class="text-blue-500">export</span> MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net</span>
+<span class="line"><span class="text-gray-500"># Requires: pip install pymongo + Atlas Vector Search index</span></span></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 5: RAG Generation ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="rag-generation">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-500 text-lg">&#128172;</div>
+          <div>
+            <h3 class="font-semibold text-sm">RAG Generation</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Retrieval-augmented generation with source citation</p>
+          </div>
+        </div>
+        <span class="pill bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">rag_generator.py</span>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Takes retrieved chunks + query, constructs a system prompt with UW rules, and calls the LLM via the factory. The system prompt enforces source citation, precise numbers, and risk flagging.
+          </p>
+          <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+            <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">from</span> layers.generation.llm_factory <span class="text-blue-500">import</span> get_llm_provider</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">generate_rag_response</span>(query, context_chunks, chat_history=<span class="text-blue-500">None</span>):</span>
+<span class="line">    <span class="text-gray-500"># Build context from retrieved chunks</span></span>
+<span class="line">    context_parts = []</span>
+<span class="line">    <span class="text-blue-500">for</span> i, chunk <span class="text-blue-500">in</span> enumerate(context_chunks, <span class="text-blue-500">1</span>):</span>
+<span class="line">        context_parts.append(</span>
+<span class="line">            <span class="text-green-600 dark:text-green-400">f"[Source {i}: {chunk['source']}, Page {chunk['page']}]\n{chunk['text']}"</span>)</span>
+<span class="line"></span>
+<span class="line">    system_prompt = <span class="text-green-600 dark:text-green-400">"""You are an expert underwriting AI assistant...</span></span>
+<span class="line"><span class="text-green-600 dark:text-green-400">    RULES:</span></span>
+<span class="line"><span class="text-green-600 dark:text-green-400">    - Answer ONLY based on the provided document context</span></span>
+<span class="line"><span class="text-green-600 dark:text-green-400">    - Always cite which source document and page</span></span>
+<span class="line"><span class="text-green-600 dark:text-green-400">    - Use precise numbers — never approximate</span></span>
+<span class="line"><span class="text-green-600 dark:text-green-400">    - Flag risks, coverage gaps, compliance issues"""</span></span>
+<span class="line"></span>
+<span class="line">    llm = get_llm_provider()  <span class="text-gray-500"># Uses whichever LLM_BACKEND is configured</span></span>
+<span class="line">    <span class="text-blue-500">return</span> llm.generate(user_prompt, system_prompt, chat_history)</span></pre>
+          </div>
+          <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/generation/rag_generator.py</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 6: Document Parsing ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="document-parsing">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-500 text-lg">&#128196;</div>
+          <div>
+            <h3 class="font-semibold text-sm">Document Parsing</h3>
+            <p class="text-xs text-gray-500 mt-0.5">PDF and DOCX text extraction with page provenance</p>
+          </div>
+        </div>
+        <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">parser.py</span>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Extracts text from PDF (via PyPDF2) and DOCX (via python-docx). Returns <code class="mono text-xs">list[(page_number, text)]</code> tuples. DOCX synthesizes page breaks at ~40 paragraphs since DOCX has no native pages.
+          </p>
+          <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+            <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">from</span> PyPDF2 <span class="text-blue-500">import</span> PdfReader</span>
+<span class="line"><span class="text-blue-500">from</span> docx <span class="text-blue-500">import</span> Document <span class="text-blue-500">as</span> DocxDocument</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">parse_pdf</span>(filepath) -> list[tuple[<span class="text-blue-500">int</span>, <span class="text-blue-500">str</span>]]:</span>
+<span class="line">    reader = PdfReader(filepath)</span>
+<span class="line">    pages = []</span>
+<span class="line">    <span class="text-blue-500">for</span> i, page <span class="text-blue-500">in</span> enumerate(reader.pages, start=<span class="text-blue-500">1</span>):</span>
+<span class="line">        text = page.extract_text() <span class="text-blue-500">or</span> <span class="text-green-600 dark:text-green-400">""</span></span>
+<span class="line">        <span class="text-blue-500">if</span> text.strip():</span>
+<span class="line">            pages.append((i, text.strip()))</span>
+<span class="line">    <span class="text-blue-500">return</span> pages</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">parse_document</span>(filepath):  <span class="text-gray-500"># Auto-detect by extension</span></span>
+<span class="line">    <span class="text-blue-500">if</span> ext <span class="text-blue-500">in</span> (<span class="text-green-600 dark:text-green-400">".pdf"</span>,): <span class="text-blue-500">return</span> parse_pdf(filepath)</span>
+<span class="line">    <span class="text-blue-500">if</span> ext <span class="text-blue-500">in</span> (<span class="text-green-600 dark:text-green-400">".docx"</span>, <span class="text-green-600 dark:text-green-400">".doc"</span>): <span class="text-blue-500">return</span> parse_docx(filepath)</span></pre>
+          </div>
+          <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/parsing/parser.py</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 7: Document Chunking ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="document-chunking">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center text-teal-500 text-lg">&#9997;</div>
+          <div>
+            <h3 class="font-semibold text-sm">Document Chunking</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Section-aware splitting with overlap for context continuity</p>
+          </div>
+        </div>
+        <div class="flex gap-1.5">
+          <span class="pill bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300">CHUNK_SIZE=512</span>
+          <span class="pill bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300">OVERLAP=64</span>
+        </div>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Smart chunker for insurance documents. Strategy: (1) Split by section headers (SECTION A, PART 1, ARTICLE III), (2) fallback to paragraphs, (3) recursive sentence splitting for oversized chunks, (4) overlap between adjacent chunks.
+          </p>
+          <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+            <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">from</span> config <span class="text-blue-500">import</span> CHUNK_SIZE, CHUNK_OVERLAP</span>
+<span class="line"></span>
+<span class="line"><span class="text-purple-500">@dataclass</span></span>
+<span class="line"><span class="text-blue-500">class</span> <span class="text-amber-600 dark:text-amber-400">Chunk</span>:</span>
+<span class="line">    chunk_id: <span class="text-blue-500">str</span>      <span class="text-gray-500"># unique UUID</span></span>
+<span class="line">    text: <span class="text-blue-500">str</span>          <span class="text-gray-500"># chunk content</span></span>
+<span class="line">    source: <span class="text-blue-500">str</span>        <span class="text-gray-500"># filename</span></span>
+<span class="line">    page: <span class="text-blue-500">int</span>          <span class="text-gray-500"># original page number</span></span>
+<span class="line">    section: <span class="text-blue-500">str</span> = <span class="text-green-600 dark:text-green-400">""</span>  <span class="text-gray-500"># detected section header</span></span>
+<span class="line">    token_estimate: <span class="text-blue-500">int</span> = <span class="text-blue-500">0</span>  <span class="text-gray-500"># auto-calculated</span></span>
+<span class="line"></span>
+<span class="line">SECTION_PATTERNS = [</span>
+<span class="line">    <span class="text-green-600 dark:text-green-400">r"^(?:SECTION|PART|ARTICLE|SCHEDULE|ENDORSEMENT)\s+[A-Z0-9]+"</span>,</span>
+<span class="line">    <span class="text-green-600 dark:text-green-400">r"^[A-Z][A-Z\s]{5,}$"</span>,  <span class="text-gray-500"># All-caps lines</span></span>
+<span class="line">    <span class="text-green-600 dark:text-green-400">r"^\d+\.\s+\w+"</span>,        <span class="text-gray-500"># "1. Introduction"</span></span>
+<span class="line">    <span class="text-green-600 dark:text-green-400">r"^[IVX]+\.\s+\w+"</span>,     <span class="text-gray-500"># "III. Conditions"</span></span>
+<span class="line">]</span>
+<span class="line"></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">chunk_document</span>(pages, filename, chunk_size=CHUNK_SIZE):</span>
+<span class="line">    <span class="text-gray-500"># Returns: list[Chunk] with page provenance</span></span></pre>
+          </div>
+          <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/chunking/chunker.py</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 8: Hallucination Detection ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="hallucination-detection">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-rose-50 dark:bg-rose-900/30 flex items-center justify-center text-rose-500 text-lg">&#128737;</div>
+          <div>
+            <h3 class="font-semibold text-sm">Hallucination Detection</h3>
+            <p class="text-xs text-gray-500 mt-0.5">4-factor scoring: retrieval, grounding, numbers, entities</p>
+          </div>
+        </div>
+        <span class="pill bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">detector.py</span>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Scalable multi-factor scoring. Returns 0-100 with risk rating. Features TF-IDF pre-filtering, vectorized numpy grounding, and volume-aware weight adjustment.
+          </p>
+          <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4">
+            <button class="tab active px-3 py-2 text-xs" onclick="switchTab(this, 'hall-factors')">4 Factors</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'hall-code')">Key Code</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'hall-config')">Config</button>
+          </div>
+          <div id="hall-factors" class="tab-content active">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="flex items-center gap-2 mb-1"><div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-[10px] font-bold text-blue-600">25%</div><span class="text-xs font-semibold">Retrieval Confidence</span></div>
+                <p class="text-[11px] text-gray-500">How relevant are the retrieved chunks? Weighted average of similarity scores.</p>
+              </div>
+              <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="flex items-center gap-2 mb-1"><div class="w-6 h-6 rounded-full bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center text-[10px] font-bold text-purple-600">35%</div><span class="text-xs font-semibold">Response Grounding</span></div>
+                <p class="text-[11px] text-gray-500">Per-sentence cosine similarity to source chunks. Vectorized numpy ops.</p>
+              </div>
+              <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="flex items-center gap-2 mb-1"><div class="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-[10px] font-bold text-green-600">20%</div><span class="text-xs font-semibold">Numerical Fidelity</span></div>
+                <p class="text-[11px] text-gray-500">Do numbers ($, %, values) in the response match the source documents?</p>
+              </div>
+              <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="flex items-center gap-2 mb-1"><div class="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-[10px] font-bold text-amber-600">20%</div><span class="text-xs font-semibold">Entity Consistency</span></div>
+                <p class="text-[11px] text-gray-500">Do policy numbers, dates, and named entities match between response and sources?</p>
+              </div>
+            </div>
+          </div>
+          <div id="hall-code" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">analyze_hallucination</span>(response, source_chunks, query) -> HallucinationReport:</span>
+<span class="line">    <span class="text-gray-500"># 1. TF-IDF pre-filter: 500+ chunks -> top 20</span></span>
+<span class="line">    filtered = _tfidf_prefilter(response, source_chunks, MAX_GROUNDING_CHUNKS)</span>
+<span class="line">    source_text = _build_source_context(filtered)</span>
+<span class="line"></span>
+<span class="line">    <span class="text-gray-500"># 2. Compute all 4 factors</span></span>
+<span class="line">    retrieval  = _compute_retrieval_confidence(filtered)</span>
+<span class="line">    grounding  = _compute_response_grounding(response, filtered)</span>
+<span class="line">    numerical  = _compute_numerical_fidelity(response, source_text)</span>
+<span class="line">    entity     = _compute_entity_consistency(response, source_text)</span>
+<span class="line"></span>
+<span class="line">    <span class="text-gray-500"># 3. Volume-aware weighted average</span></span>
+<span class="line">    weights = VOLUME_WEIGHTS <span class="text-blue-500">if</span> len(source_chunks) > VOLUME_THRESHOLD <span class="text-blue-500">else</span> WEIGHTS</span>
+<span class="line">    overall = sum(w * s <span class="text-blue-500">for</span> w, s <span class="text-blue-500">in</span> zip(weights.values(), scores))</span>
+<span class="line"></span>
+<span class="line">    <span class="text-gray-500"># 4. Rating: 80-100=LOW, 50-79=MEDIUM, 0-49=HIGH risk</span></span>
+<span class="line">    <span class="text-blue-500">return</span> HallucinationReport(overall_score=overall, ...)</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/hallucination/detector.py</p>
+          </div>
+          <div id="hall-config" class="tab-content">
+            <table class="w-full text-xs"><thead><tr class="border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 px-2 font-semibold text-gray-500">Variable</th><th class="text-left py-2 px-2 font-semibold text-gray-500">Default</th><th class="text-left py-2 px-2 font-semibold text-gray-500">What it does</th></tr></thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+              <tr><td class="py-2 px-2 mono">MAX_GROUNDING_CHUNKS</td><td class="py-2 px-2 mono">20</td><td class="py-2 px-2">Max chunks kept after TF-IDF pre-filter</td></tr>
+              <tr><td class="py-2 px-2 mono">GROUNDING_THRESHOLD</td><td class="py-2 px-2 mono">0.65</td><td class="py-2 px-2">Cosine similarity threshold for "grounded"</td></tr>
+              <tr><td class="py-2 px-2 mono">EMBEDDING_BATCH_SIZE</td><td class="py-2 px-2 mono">50</td><td class="py-2 px-2">Batch size for embedding API calls</td></tr>
+              <tr><td class="py-2 px-2 mono">VOLUME_THRESHOLD</td><td class="py-2 px-2 mono">50</td><td class="py-2 px-2">Chunk count triggering volume-aware weights</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 9: Action Extraction ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="action-extraction">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-cyan-50 dark:bg-cyan-900/30 flex items-center justify-center text-cyan-500 text-lg">&#9889;</div>
+          <div>
+            <h3 class="font-semibold text-sm">Action Extraction</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Structured UW actions — risk flags, endorsements, coverage gaps</p>
+          </div>
+        </div>
+        <span class="pill bg-cyan-100 text-cyan-700 dark:bg-cyan-900/50 dark:text-cyan-300">extractor.py</span>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Uses the LLM to extract structured JSON actions from the AI answer + context. Each action has category, priority, details, and source reference. Invalid JSON is gracefully handled with safe defaults.
+          </p>
+          <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+            <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">get_uw_actions</span>(query, answer, source_chunks) -> list[UWAction]:</span>
+<span class="line">    raw = extract_actions_prompt(query, answer, source_chunks)</span>
+<span class="line"></span>
+<span class="line">    <span class="text-gray-500"># Strip markdown fences if LLM wraps in ```json</span></span>
+<span class="line">    <span class="text-blue-500">if</span> raw.startswith(<span class="text-green-600 dark:text-green-400">"```"</span>): raw = raw.split(<span class="text-green-600 dark:text-green-400">"\n"</span>, <span class="text-blue-500">1</span>)[<span class="text-blue-500">1</span>]</span>
+<span class="line">    <span class="text-blue-500">if</span> raw.endswith(<span class="text-green-600 dark:text-green-400">"```"</span>): raw = raw[:-<span class="text-blue-500">3</span>]</span>
+<span class="line"></span>
+<span class="line">    actions_data = json.loads(raw)</span>
+<span class="line">    <span class="text-gray-500"># Each action:</span></span>
+<span class="line">    <span class="text-gray-500">#   action:           "Review cyber liability sublimit"</span></span>
+<span class="line">    <span class="text-gray-500">#   category:         coverage_gap | risk_flag | endorsement | compliance | pricing</span></span>
+<span class="line">    <span class="text-gray-500">#   priority:         critical | high | medium | low</span></span>
+<span class="line">    <span class="text-gray-500">#   details:          "The policy does not include..."</span></span>
+<span class="line">    <span class="text-gray-500">#   source_reference: "Policy.pdf, Page 12"</span></span></pre>
+          </div>
+          <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/actions/extractor.py</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 10: API Endpoints ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="api-endpoints">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 text-lg">&#127760;</div>
+          <div>
+            <h3 class="font-semibold text-sm">API Endpoints</h3>
+            <p class="text-xs text-gray-500 mt-0.5">FastAPI routes — upload, chat, bulk delete, health check</p>
+          </div>
+        </div>
+        <span class="pill bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">main.py</span>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            FastAPI app with CORS from env vars. The full RAG pipeline is orchestrated through these endpoints.
+          </p>
+          <div class="space-y-2">
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 mono">GET</span>
+              <div><span class="mono text-xs font-medium">/health</span><span class="text-[11px] text-gray-500 ml-2">— status + llm_backend + embedding_backend + vector_store_backend</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
+              <div><span class="mono text-xs font-medium">/api/documents/upload</span><span class="text-[11px] text-gray-500 ml-2">— upload PDF/DOCX, parse, chunk, embed, store</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 mono">GET</span>
+              <div><span class="mono text-xs font-medium">/api/documents</span><span class="text-[11px] text-gray-500 ml-2">— list all uploaded documents with metadata</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 mono">DEL</span>
+              <div><span class="mono text-xs font-medium">/api/documents/{id}</span><span class="text-[11px] text-gray-500 ml-2">— delete single document by ID</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 mono">POST</span>
+              <div><span class="mono text-xs font-medium">/api/documents/bulk-delete</span><span class="text-[11px] text-gray-500 ml-2">— { "document_ids": [...] }</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
+              <div><span class="mono text-xs font-medium">/api/chat</span><span class="text-[11px] text-gray-500 ml-2">— RAG: search + generate + hallucination + actions</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
+              <div><span class="mono text-xs font-medium">/api/sessions/{id}/clear</span><span class="text-[11px] text-gray-500 ml-2">— clear chat session history</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ Quick Start ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="quick-start">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent2 flex items-center justify-center text-white text-lg">&#9654;</div>
+          <div>
+            <h3 class="font-semibold text-sm">Quick Start</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Setup instructions, run commands, and verification</p>
+          </div>
+        </div>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+            <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-gray-500"># 1. Backend (defaults: Gemini + LanceDB — zero config needed)</span></span>
+<span class="line"><span class="text-blue-500">cd</span> backend</span>
+<span class="line">pip install -r requirements.txt</span>
+<span class="line"><span class="text-blue-500">export</span> GEMINI_API_KEY=your-key-here</span>
+<span class="line">python3 main.py</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 2. Frontend</span></span>
+<span class="line"><span class="text-blue-500">cd</span> ..</span>
+<span class="line">npm install</span>
+<span class="line">npx ng serve --port 4200</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 3. Verify</span></span>
+<span class="line">curl http://localhost:8000/health</span>
+<span class="line"><span class="text-gray-500"># {"status":"ok","llm_backend":"gemini","embedding_backend":"gemini",</span></span>
+<span class="line"><span class="text-gray-500">#  "vector_store_backend":"lancedb","gemini_configured":true}</span></span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 4. Run tests (268 tests)</span></span>
+<span class="line"><span class="text-blue-500">cd</span> backend && python3 -m pytest tests/ -v</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 5. Switch providers</span></span>
+<span class="line"><span class="text-blue-500">export</span> LLM_BACKEND=openai OPENAI_API_KEY=sk-...</span>
+<span class="line"><span class="text-blue-500">export</span> VECTOR_STORE_BACKEND=pgvector</span>
+<span class="line">python3 main.py</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="max-w-5xl mx-auto px-6 py-8 text-center text-xs text-gray-400 dark:text-gray-600 border-t border-gray-200 dark:border-gray-800 mt-6">
+    UW Companion Developer Dashboard — Open this file in any browser. No server needed.
+  </footer>
+
+  <script>
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      const isDark = document.documentElement.classList.contains('dark');
+      document.getElementById('themeIcon').innerHTML = isDark ? '&#9728;' : '&#9789;';
+      localStorage.setItem('dev-dash-theme', isDark ? 'dark' : 'light');
+    }
+    if (localStorage.getItem('dev-dash-theme') === 'dark' ||
+        (!localStorage.getItem('dev-dash-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      document.getElementById('themeIcon').innerHTML = '&#9728;';
+    }
+
+    function toggleFeature(btn) {
+      const card = btn.closest('.feature-card');
+      const panel = card.querySelector('.expand-panel');
+      const arrow = card.querySelector('.arrow');
+
+      document.querySelectorAll('.expand-panel.open').forEach(p => {
+        if (p !== panel) {
+          p.classList.remove('open');
+          p.closest('.feature-card').querySelector('.arrow').classList.remove('rotated');
+        }
+      });
+
+      panel.classList.toggle('open');
+      arrow.classList.toggle('rotated');
+    }
+
+    function switchTab(tabBtn, contentId) {
+      const container = tabBtn.closest('.expand-panel');
+      container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tabBtn.classList.add('active');
+      document.getElementById(contentId).classList.add('active');
+    }
+
+    function copyCode(btn) {
+      const pre = btn.closest('.code-block').querySelector('pre');
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+      });
+    }
+
+    document.getElementById('globalSearch').addEventListener('input', function() {
+      const q = this.value.toLowerCase().trim();
+      document.querySelectorAll('.feature-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = (!q || text.includes(q)) ? '' : 'none';
+      });
+    });
+  </script>
+</body>
+</html>

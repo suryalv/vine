@@ -1,4 +1,5 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
 import {
   LUCIDE_ICONS,
   LucideIconProvider,
@@ -15,6 +16,13 @@ import {
   Paperclip,
   Send,
   Upload,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  Eye,
+  Trash2,
+  RefreshCw,
+  X,
 } from 'lucide-angular';
 
 const icons = {
@@ -31,11 +39,19 @@ const icons = {
   Paperclip,
   Send,
   Upload,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  Eye,
+  Trash2,
+  RefreshCw,
+  X,
 };
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
+    provideHttpClient(),
     {
       provide: LUCIDE_ICONS,
       multi: true,
