@@ -93,7 +93,7 @@ async def upload_document(file: UploadFile = File(...)):
         raise HTTPException(400, "No filename provided")
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in (".pdf", ".docx", ".doc", ".xlsx"):
+    if ext not in (".pdf", ".docx", ".doc", ".xlsx", ".xls"):
         raise HTTPException(400, f"Unsupported file type: {ext}. Use PDF, DOCX, or Excel.")
 
     # Save uploaded file to disk
@@ -324,7 +324,7 @@ async def upload_guideline(
         raise HTTPException(400, "No filename provided")
 
     ext = Path(file.filename).suffix.lower()
-    if ext not in (".pdf", ".docx", ".doc", ".xlsx"):
+    if ext not in (".pdf", ".docx", ".doc", ".xlsx", ".xls"):
         raise HTTPException(400, f"Unsupported file type: {ext}. Use PDF, DOCX, or Excel.")
 
     guideline_id = str(uuid.uuid4())

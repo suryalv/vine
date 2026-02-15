@@ -5,6 +5,7 @@ Document parser — extracts structured text from PDF, DOCX, and Excel files.
 Returns a list of (page_number, text) tuples to preserve page provenance.
 """
 
+from datetime import date, datetime
 from pathlib import Path
 import pdfplumber
 from docx import Document as DocxDocument
@@ -56,29 +57,76 @@ def parse_docx(filepath: str) -> list[tuple[int, str]]:
     return pages
 
 
+def _format_cell(value) -> str:
+    """Format a cell value for text output. Returns '' for None or formula strings."""
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        if value.hour == 0 and value.minute == 0 and value.second == 0:
+            return value.strftime("%Y-%m-%d")
+        return value.strftime("%Y-%m-%d %H:%M")
+    if isinstance(value, date):
+        return value.strftime("%Y-%m-%d")
+    text = str(value).strip()
+    if text.startswith("="):
+        return ""
+    text = text.replace("\n", " ").replace("\r", " ")
+    return text
+
+
+_XLSX_ROWS_PER_PAGE = 100
+
+
 def parse_xlsx(filepath: str) -> list[tuple[int, str]]:
     """
     Extract text from an Excel (.xlsx) file.
-    Each worksheet becomes a "page" with sheet_index as the page number.
-    Rows are joined with pipe separators (consistent with DOCX table extraction).
+    Each worksheet becomes one or more "pages". Large sheets (>100 rows)
+    are split into chunks with the header row repeated in each chunk.
+    Rows are pipe-separated (consistent with DOCX tables).
+    Hidden sheets are skipped.
     """
     wb = load_workbook(filepath, read_only=True, data_only=True)
     pages: list[tuple[int, str]] = []
+    page_counter = 1
 
-    for sheet_num, sheet_name in enumerate(wb.sheetnames, start=1):
+    for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
-        rows: list[str] = []
 
-        rows.append(f"Sheet: {sheet_name}")
+        if ws.sheet_state != "visible":
+            continue
+
+        all_rows: list[str] = []
+        header_line = f"Sheet: {sheet_name}"
+        header_row: str | None = None
+        seen_values: set[str] = set()
 
         for row in ws.iter_rows(values_only=True):
-            cells = [str(cell).strip() for cell in row if cell is not None]
-            if cells:
-                rows.append(" | ".join(cells))
+            cells = [_format_cell(cell) for cell in row]
+            cells = [c for c in cells if c]
+            if not cells:
+                continue
+            line = " | ".join(cells)
+            if line in seen_values:
+                continue
+            seen_values.add(line)
+            if header_row is None:
+                header_row = line
+            all_rows.append(line)
 
-        page_text = "\n".join(rows)
-        if page_text.strip() and len(rows) > 1:
-            pages.append((sheet_num, page_text))
+        if not all_rows:
+            continue
+
+        for chunk_start in range(0, len(all_rows), _XLSX_ROWS_PER_PAGE):
+            chunk = all_rows[chunk_start : chunk_start + _XLSX_ROWS_PER_PAGE]
+            chunk_label = header_line
+            if len(all_rows) > _XLSX_ROWS_PER_PAGE:
+                chunk_label += f" (rows {chunk_start + 1}-{chunk_start + len(chunk)})"
+            lines = [chunk_label]
+            if chunk_start > 0 and header_row:
+                lines.append(header_row)
+            lines.extend(chunk)
+            pages.append((page_counter, "\n".join(lines)))
+            page_counter += 1
 
     wb.close()
     return pages
@@ -91,7 +139,7 @@ def parse_document(filepath: str) -> list[tuple[int, str]]:
         return parse_pdf(filepath)
     elif ext in (".docx", ".doc"):
         return parse_docx(filepath)
-    elif ext == ".xlsx":
+    elif ext in (".xlsx", ".xls"):
         return parse_xlsx(filepath)
     else:
         raise ValueError(f"Unsupported file format: {ext}")
