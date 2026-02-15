@@ -16,14 +16,25 @@ def generate_rag_response(
     query: str,
     context_chunks: list[dict],
     chat_history: list[dict] | None = None,
+    guideline_chunks: list[dict] | None = None,
 ) -> str:
-    """Generate a response grounded in the retrieved document chunks."""
+    """Generate a response grounded in the retrieved document chunks and optional guidelines."""
     context_parts = []
     for i, chunk in enumerate(context_chunks, 1):
         context_parts.append(
             f"[Source {i}: {chunk['source']}, Page {chunk['page']}]\n{chunk['text']}"
         )
     context_block = "\n\n---\n\n".join(context_parts)
+
+    # Add guidelines context if available
+    guidelines_block = ""
+    if guideline_chunks:
+        guideline_parts = []
+        for i, chunk in enumerate(guideline_chunks, 1):
+            guideline_parts.append(
+                f"[Guideline {i}: {chunk['source']}, Page {chunk['page']}]\n{chunk['text']}"
+            )
+        guidelines_block = "\n\nUNDERWRITING GUIDELINES:\n" + "\n\n---\n\n".join(guideline_parts)
 
     system_prompt = """You are an expert underwriting AI assistant. You help commercial insurance underwriters analyze documents, extract key information, identify risks, and make informed decisions.
 
@@ -33,10 +44,11 @@ RULES:
 - Always cite which source document and page your information comes from
 - Use precise numbers and figures from the documents — never approximate
 - Flag any risks, coverage gaps, or compliance issues you identify
+- If underwriting guidelines are provided, check the submission data against them and flag any violations or concerns
 - Be concise but thorough"""
 
     user_prompt = f"""DOCUMENT CONTEXT:
-{context_block}
+{context_block}{guidelines_block}
 
 QUESTION: {query}
 

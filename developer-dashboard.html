@@ -86,7 +86,7 @@
   <div class="max-w-5xl mx-auto px-6 pt-6">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-        <div class="text-2xl font-bold text-accent">9</div>
+        <div class="text-2xl font-bold text-accent">10</div>
         <div class="text-xs text-gray-500 mt-1">Features</div>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
@@ -94,7 +94,7 @@
         <div class="text-xs text-gray-500 mt-1">LLM Providers</div>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-        <div class="text-2xl font-bold text-green-500">268</div>
+        <div class="text-2xl font-bold text-green-500">290</div>
         <div class="text-xs text-gray-500 mt-1">Tests Passing</div>
       </div>
       <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
@@ -164,6 +164,10 @@
 <span class="line">CHUNK_OVERLAP = <span class="text-blue-500">int</span>(os.getenv(<span class="text-green-600 dark:text-green-400">"CHUNK_OVERLAP"</span>, <span class="text-green-600 dark:text-green-400">"64"</span>))</span>
 <span class="line">TOP_K_RESULTS = <span class="text-blue-500">int</span>(os.getenv(<span class="text-green-600 dark:text-green-400">"TOP_K_RESULTS"</span>, <span class="text-green-600 dark:text-green-400">"8"</span>))</span>
 <span class="line"></span>
+<span class="line"><span class="text-gray-500"># ─── UW Guidelines ───────────────────────────────</span></span>
+<span class="line">GUIDELINES_TABLE_NAME = os.getenv(<span class="text-green-600 dark:text-green-400">"GUIDELINES_TABLE_NAME"</span>, <span class="text-green-600 dark:text-green-400">"uw_guidelines"</span>)</span>
+<span class="line">GUIDELINES_TOP_K = <span class="text-blue-500">int</span>(os.getenv(<span class="text-green-600 dark:text-green-400">"GUIDELINES_TOP_K"</span>, <span class="text-green-600 dark:text-green-400">"15"</span>))</span>
+<span class="line"></span>
 <span class="line"><span class="text-gray-500"># ─── API ─────────────────────────────────────────</span></span>
 <span class="line">API_HOST = os.getenv(<span class="text-green-600 dark:text-green-400">"API_HOST"</span>, <span class="text-green-600 dark:text-green-400">"0.0.0.0"</span>)</span>
 <span class="line">API_PORT = <span class="text-blue-500">int</span>(os.getenv(<span class="text-green-600 dark:text-green-400">"API_PORT"</span>, <span class="text-green-600 dark:text-green-400">"8000"</span>))</span>
@@ -197,6 +201,8 @@
                 <tr><td class="py-2 px-2 mono">API_HOST</td><td class="py-2 px-2 mono">0.0.0.0</td><td class="py-2 px-2">IP / hostname</td></tr>
                 <tr><td class="py-2 px-2 mono">API_PORT</td><td class="py-2 px-2 mono">8000</td><td class="py-2 px-2">Integer</td></tr>
                 <tr><td class="py-2 px-2 mono">CORS_ORIGINS</td><td class="py-2 px-2 mono">http://localhost:4200,...</td><td class="py-2 px-2">Comma-separated URLs</td></tr>
+                <tr><td class="py-2 px-2 mono text-emerald-600 dark:text-emerald-400">GUIDELINES_TABLE_NAME</td><td class="py-2 px-2 mono">uw_guidelines</td><td class="py-2 px-2">LanceDB table for guidelines</td></tr>
+                <tr><td class="py-2 px-2 mono text-emerald-600 dark:text-emerald-400">GUIDELINES_TOP_K</td><td class="py-2 px-2 mono">15</td><td class="py-2 px-2">Guideline chunks per search</td></tr>
               </tbody></table>
             </div>
           </div>
@@ -748,7 +754,210 @@
       </div>
     </div>
 
-    <!-- ══════════ FEATURE 10: API Endpoints ══════════ -->
+    <!-- ══════════ FEATURE 10: UW Guidelines & Enforcement ══════════ -->
+    <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="uw-guidelines">
+      <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
+        <div class="flex items-center gap-3">
+          <span class="arrow text-gray-400 text-sm">&#9654;</span>
+          <div class="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 text-lg">&#9878;</div>
+          <div>
+            <h3 class="font-semibold text-sm">UW Guidelines & Enforcement</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Separate guidelines layer — upload rules, enforce against submissions</p>
+          </div>
+        </div>
+        <div class="flex gap-1.5">
+          <span class="pill bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">New Layer</span>
+          <span class="pill bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">LanceDB</span>
+        </div>
+      </button>
+      <div class="expand-panel">
+        <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            Underwriting guidelines live in their own layer with a <strong>separate LanceDB table</strong> (<code class="mono text-xs text-accent">uw_guidelines</code>) isolated from document chunks. Upload guideline documents (Property, WC, Excess, D&amp;O), then enforce them against any submission to get structured compliance findings.
+          </p>
+          <div class="flex gap-1 border-b border-gray-200 dark:border-gray-700 mb-4">
+            <button class="tab active px-3 py-2 text-xs" onclick="switchTab(this, 'gl-arch')">Architecture</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'gl-store')">Guidelines Store</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'gl-enforcer')">Enforcement Engine</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'gl-api')">API & Flow</button>
+            <button class="tab px-3 py-2 text-xs" onclick="switchTab(this, 'gl-docs')">Guideline Docs</button>
+          </div>
+          <div id="gl-arch" class="tab-content active">
+            <div class="space-y-3">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center">
+                  <div class="text-lg mb-1">&#128220;</div>
+                  <div class="text-xs font-semibold">Guidelines Store</div>
+                  <div class="text-[11px] text-gray-500 mt-1">Separate LanceDB table<br/><code class="mono text-[10px]">uw_guidelines</code></div>
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center">
+                  <div class="text-lg mb-1">&#9878;</div>
+                  <div class="text-xs font-semibold">Enforcement Engine</div>
+                  <div class="text-[11px] text-gray-500 mt-1">LLM-powered compliance<br/>check against guidelines</div>
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg text-center">
+                  <div class="text-lg mb-1">&#128202;</div>
+                  <div class="text-xs font-semibold">Enforcement Report</div>
+                  <div class="text-[11px] text-gray-500 mt-1">Violations, warnings,<br/>compliance score</div>
+                </div>
+              </div>
+              <div class="space-y-2 mt-3">
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/guidelines/guidelines_store.py</div><div class="text-[11px] text-gray-500">LanceDB-backed store with separate <code class="mono text-[10px]">uw_guidelines</code> table — singleton pattern</div></div></div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/guidelines/enforcer.py</div><div class="text-[11px] text-gray-500">Retrieves submission chunks + guidelines, LLM evaluates compliance, returns structured report</div></div></div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">layers/guidelines/__init__.py</div><div class="text-[11px] text-gray-500">Public API: store, search, search_by_line, list, delete, enforce</div></div></div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg"><div><div class="mono text-xs font-medium">models/schemas.py</div><div class="text-[11px] text-gray-500">GuidelineViolation, EnforcementReport, GuidelineInfo, GuidelineUploadResponse, EnforcementRequest</div></div></div>
+              </div>
+            </div>
+          </div>
+          <div id="gl-store" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">class</span> <span class="text-amber-600 dark:text-amber-400">GuidelinesStore</span>:</span>
+<span class="line">    <span class="text-gray-500">"""LanceDB-backed store for underwriting guideline chunks.</span></span>
+<span class="line"><span class="text-gray-500">       Uses SEPARATE table from document chunks."""</span></span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">__init__</span>(self, db_path=LANCE_DB_PATH,</span>
+<span class="line">                 table_name=GUIDELINES_TABLE_NAME,  <span class="text-gray-500"># "uw_guidelines"</span></span>
+<span class="line">                 top_k=GUIDELINES_TOP_K):            <span class="text-gray-500"># 15</span></span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">store_guideline_chunks</span>(self, chunks, guideline_id,</span>
+<span class="line">            filename, line_of_business, num_pages) -> <span class="text-blue-500">int</span>:</span>
+<span class="line">        <span class="text-gray-500"># Record schema:</span></span>
+<span class="line">        <span class="text-gray-500">#   vector, chunk_id, text, source, page, section,</span></span>
+<span class="line">        <span class="text-gray-500">#   guideline_id, line_of_business</span></span>
+<span class="line">        ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">search_guidelines</span>(self, query, top_k=<span class="text-blue-500">None</span>) -> List[Dict]:</span>
+<span class="line">        <span class="text-gray-500"># Searches uw_guidelines table only</span></span>
+<span class="line">        ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">search_by_line</span>(self, query, line_of_business, top_k=<span class="text-blue-500">None</span>):</span>
+<span class="line">        <span class="text-gray-500"># Filtered: WHERE line_of_business = "property"</span></span>
+<span class="line">        ...</span>
+<span class="line"></span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">list_guidelines</span>(self) -> List[Dict]: ...</span>
+<span class="line">    <span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">delete_guideline</span>(self, guideline_id) -> <span class="text-blue-500">bool</span>: ...</span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># Singleton</span></span>
+<span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">get_guidelines_store</span>() -> GuidelinesStore: ...</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/guidelines/guidelines_store.py</p>
+          </div>
+          <div id="gl-enforcer" class="tab-content">
+            <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative">
+              <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-blue-500">def</span> <span class="text-amber-600 dark:text-amber-400">enforce_guidelines</span>(document_id, line_of_business=<span class="text-blue-500">None</span>) -> EnforcementReport:</span>
+<span class="line">    <span class="text-gray-500"># 1. Get submission chunks from document store</span></span>
+<span class="line">    submission_chunks = get_chunks_by_document(document_id)</span>
+<span class="line"></span>
+<span class="line">    <span class="text-gray-500"># 2. Build submission text summary</span></span>
+<span class="line">    submission_text = <span class="text-green-600 dark:text-green-400">" "</span>.join(chunk[<span class="text-green-600 dark:text-green-400">"text"</span>][:<span class="text-blue-500">200</span>] <span class="text-blue-500">for</span> chunk <span class="text-blue-500">in</span> chunks[:<span class="text-blue-500">10</span>])</span>
+<span class="line"></span>
+<span class="line">    <span class="text-gray-500"># 3. Search guidelines (optionally by line of business)</span></span>
+<span class="line">    <span class="text-blue-500">if</span> line_of_business:</span>
+<span class="line">        guideline_chunks = store.search_by_line(submission_text, line_of_business)</span>
+<span class="line">    <span class="text-blue-500">else</span>:</span>
+<span class="line">        guideline_chunks = store.search_guidelines(submission_text)</span>
+<span class="line"></span>
+<span class="line">    <span class="text-gray-500"># 4. LLM evaluates compliance</span></span>
+<span class="line">    prompt = <span class="text-green-600 dark:text-green-400">f"""Compare submission against guidelines...</span></span>
+<span class="line"><span class="text-green-600 dark:text-green-400">    Return JSON: {{"findings": [{{"rule":..., "status":"violation|warning|compliant",</span></span>
+<span class="line"><span class="text-green-600 dark:text-green-400">        "finding":..., "guideline_reference":..., "recommendation":...}}]}}"""</span></span>
+<span class="line">    raw = get_llm_provider().generate_simple(prompt)</span>
+<span class="line"></span>
+<span class="line">    <span class="text-gray-500"># 5. Parse findings, compute compliance score</span></span>
+<span class="line">    <span class="text-gray-500"># Score: (compliant + warnings * 0.5) / total * 100</span></span>
+<span class="line">    <span class="text-blue-500">return</span> EnforcementReport(</span>
+<span class="line">        violations=violations, compliance_score=score, summary=summary, ...)</span></pre>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-2 italic">backend/layers/guidelines/enforcer.py</p>
+          </div>
+          <div id="gl-api" class="tab-content">
+            <div class="space-y-3">
+              <div class="space-y-2">
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
+                  <div><span class="mono text-xs font-medium">/api/guidelines/upload?line_of_business=property</span><span class="text-[11px] text-gray-500 ml-2">— upload guideline PDF/DOCX</span></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 mono">GET</span>
+                  <div><span class="mono text-xs font-medium">/api/guidelines</span><span class="text-[11px] text-gray-500 ml-2">— list all stored guidelines with metadata</span></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 mono">DEL</span>
+                  <div><span class="mono text-xs font-medium">/api/guidelines/{guideline_id}</span><span class="text-[11px] text-gray-500 ml-2">— delete a guideline document</span></div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                  <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
+                  <div><span class="mono text-xs font-medium">/api/guidelines/enforce</span><span class="text-[11px] text-gray-500 ml-2">— check submission against guidelines &rarr; EnforcementReport</span></div>
+                </div>
+              </div>
+              <div class="code-block bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-xs overflow-x-auto relative mt-3">
+                <button class="copy-btn px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-[10px] hover:bg-gray-300 dark:hover:bg-gray-600" onclick="copyCode(this)">Copy</button>
+<pre class="mono"><span class="line"><span class="text-gray-500"># Upload a property guideline</span></span>
+<span class="line">curl -X POST -F <span class="text-green-600 dark:text-green-400">"file=@Property_UW_Guidelines.docx"</span> \</span>
+<span class="line">  <span class="text-green-600 dark:text-green-400">"http://localhost:8000/api/guidelines/upload?line_of_business=property"</span></span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># Enforce against a submission document</span></span>
+<span class="line">curl -X POST -H <span class="text-green-600 dark:text-green-400">"Content-Type: application/json"</span> \</span>
+<span class="line">  -d <span class="text-green-600 dark:text-green-400">'{"document_id": "abc-123", "line_of_business": "property"}'</span> \</span>
+<span class="line">  <span class="text-green-600 dark:text-green-400">"http://localhost:8000/api/guidelines/enforce"</span></span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># Response: EnforcementReport</span></span>
+<span class="line"><span class="text-gray-500"># { "compliance_score": 72.5, "num_violations": 3, "num_warnings": 2,</span></span>
+<span class="line"><span class="text-gray-500">#   "violations": [{ "rule": "...", "status": "violation", ... }], ... }</span></span></pre>
+              </div>
+            </div>
+          </div>
+          <div id="gl-docs" class="tab-content">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+              4 realistic guideline documents with numbered rules and specific thresholds. Generated from <code class="mono text-xs">sample-documents/guidelines/generate_guidelines.py</code>.
+            </p>
+            <div class="space-y-2">
+              <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-semibold">Property_UW_Guidelines.docx</div>
+                    <div class="text-[11px] text-gray-500 mt-0.5">TIV limits, construction restrictions, loss ratios, CAT exposure, protective safeguards, pricing, mandatory endorsements</div>
+                  </div>
+                  <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">7 sections</span>
+                </div>
+              </div>
+              <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-semibold">Workers_Comp_UW_Guidelines.docx</div>
+                    <div class="text-[11px] text-gray-500 mt-0.5">EMR thresholds, prohibited class codes, OSHA compliance, retro programs, safety requirements, class-specific rules</div>
+                  </div>
+                  <span class="pill bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">7 sections</span>
+                </div>
+              </div>
+              <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-semibold">Excess_Umbrella_UW_Guidelines.docx</div>
+                    <div class="text-[11px] text-gray-500 mt-0.5">Underlying requirements, attachment points, excluded risks, punitive damages, A.M. Best ratings, loss history</div>
+                  </div>
+                  <span class="pill bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300">6 sections</span>
+                </div>
+              </div>
+              <div class="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="text-xs font-semibold">DO_Fiduciary_UW_Guidelines.docx</div>
+                    <div class="text-[11px] text-gray-500 mt-0.5">Public/private company D&amp;O, retentions by revenue tier, Side A/B/C coverage, fiduciary liability, financial analysis</div>
+                  </div>
+                  <span class="pill bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">7 sections</span>
+                </div>
+              </div>
+            </div>
+            <p class="text-[11px] text-gray-400 mt-3 italic">Each doc has numbered rules with specific thresholds (e.g., "DECLINE if EMR > 1.50", "Minimum TIV $500,000")</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FEATURE 11: API Endpoints ══════════ -->
     <div class="feature-card bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800" data-feature="api-endpoints">
       <button class="w-full text-left px-5 py-4 flex items-center justify-between" onclick="toggleFeature(this)">
         <div class="flex items-center gap-3">
@@ -756,7 +965,7 @@
           <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 text-lg">&#127760;</div>
           <div>
             <h3 class="font-semibold text-sm">API Endpoints</h3>
-            <p class="text-xs text-gray-500 mt-0.5">FastAPI routes — upload, chat, bulk delete, health check</p>
+            <p class="text-xs text-gray-500 mt-0.5">FastAPI routes — documents, chat, guidelines, enforcement</p>
           </div>
         </div>
         <span class="pill bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300">main.py</span>
@@ -764,13 +973,15 @@
       <div class="expand-panel">
         <div class="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-            FastAPI app with CORS from env vars. The full RAG pipeline is orchestrated through these endpoints.
+            FastAPI app with CORS from env vars. The full RAG pipeline + guidelines enforcement orchestrated through these endpoints. Chat automatically includes guideline context when guidelines are stored.
           </p>
           <div class="space-y-2">
+            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-1">Core</p>
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 mono">GET</span>
               <div><span class="mono text-xs font-medium">/health</span><span class="text-[11px] text-gray-500 ml-2">— status + llm_backend + embedding_backend + vector_store_backend</span></div>
             </div>
+            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-3">Documents</p>
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
               <div><span class="mono text-xs font-medium">/api/documents/upload</span><span class="text-[11px] text-gray-500 ml-2">— upload PDF/DOCX, parse, chunk, embed, store</span></div>
@@ -787,13 +998,31 @@
               <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 mono">POST</span>
               <div><span class="mono text-xs font-medium">/api/documents/bulk-delete</span><span class="text-[11px] text-gray-500 ml-2">— { "document_ids": [...] }</span></div>
             </div>
+            <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mt-3">Chat</p>
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
-              <div><span class="mono text-xs font-medium">/api/chat</span><span class="text-[11px] text-gray-500 ml-2">— RAG: search + generate + hallucination + actions</span></div>
+              <div><span class="mono text-xs font-medium">/api/chat</span><span class="text-[11px] text-gray-500 ml-2">— RAG: search + generate + hallucination + actions (+ guideline context)</span></div>
             </div>
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
               <div><span class="mono text-xs font-medium">/api/sessions/{id}/clear</span><span class="text-[11px] text-gray-500 ml-2">— clear chat session history</span></div>
+            </div>
+            <p class="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider mt-3">UW Guidelines</p>
+            <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
+              <div><span class="mono text-xs font-medium">/api/guidelines/upload?line_of_business=...</span><span class="text-[11px] text-gray-500 ml-2">— upload guideline PDF/DOCX</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <span class="pill bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300 mono">GET</span>
+              <div><span class="mono text-xs font-medium">/api/guidelines</span><span class="text-[11px] text-gray-500 ml-2">— list all stored guidelines</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <span class="pill bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 mono">DEL</span>
+              <div><span class="mono text-xs font-medium">/api/guidelines/{guideline_id}</span><span class="text-[11px] text-gray-500 ml-2">— delete guideline</span></div>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <span class="pill bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 mono">POST</span>
+              <div><span class="mono text-xs font-medium">/api/guidelines/enforce</span><span class="text-[11px] text-gray-500 ml-2">— enforce submission against guidelines &rarr; EnforcementReport</span></div>
             </div>
           </div>
         </div>
@@ -832,10 +1061,19 @@
 <span class="line"><span class="text-gray-500"># {"status":"ok","llm_backend":"gemini","embedding_backend":"gemini",</span></span>
 <span class="line"><span class="text-gray-500">#  "vector_store_backend":"lancedb","gemini_configured":true}</span></span>
 <span class="line"></span>
-<span class="line"><span class="text-gray-500"># 4. Run tests (268 tests)</span></span>
+<span class="line"><span class="text-gray-500"># 4. Run tests (290 tests)</span></span>
 <span class="line"><span class="text-blue-500">cd</span> backend && python3 -m pytest tests/ -v</span>
 <span class="line"></span>
-<span class="line"><span class="text-gray-500"># 5. Switch providers</span></span>
+<span class="line"><span class="text-gray-500"># 5. Upload UW guidelines</span></span>
+<span class="line">curl -X POST -F <span class="text-green-600 dark:text-green-400">"file=@Property_UW_Guidelines.docx"</span> \</span>
+<span class="line">  <span class="text-green-600 dark:text-green-400">"localhost:8000/api/guidelines/upload?line_of_business=property"</span></span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 6. Enforce against a submission</span></span>
+<span class="line">curl -X POST -H <span class="text-green-600 dark:text-green-400">"Content-Type: application/json"</span> \</span>
+<span class="line">  -d <span class="text-green-600 dark:text-green-400">'{"document_id":"...","line_of_business":"property"}'</span> \</span>
+<span class="line">  <span class="text-green-600 dark:text-green-400">"localhost:8000/api/guidelines/enforce"</span></span>
+<span class="line"></span>
+<span class="line"><span class="text-gray-500"># 7. Switch providers</span></span>
 <span class="line"><span class="text-blue-500">export</span> LLM_BACKEND=openai OPENAI_API_KEY=sk-...</span>
 <span class="line"><span class="text-blue-500">export</span> VECTOR_STORE_BACKEND=pgvector</span>
 <span class="line">python3 main.py</span></pre>

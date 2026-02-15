@@ -72,6 +72,10 @@ HALLUCINATION_VOLUME_WEIGHTS = {
     "entity_consistency": 0.20,
 }
 
+# ─── UW Guidelines ────────────────────────────────────────────────
+GUIDELINES_TABLE_NAME = os.getenv("GUIDELINES_TABLE_NAME", "uw_guidelines")
+GUIDELINES_TOP_K = int(os.getenv("GUIDELINES_TOP_K", "15"))
+
 # ─── API ─────────────────────────────────────────────────────────
 API_HOST = os.getenv("API_HOST", "0.0.0.0")
 API_PORT = int(os.getenv("API_PORT", "8000"))

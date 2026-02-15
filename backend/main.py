@@ -24,6 +24,10 @@ from models.schemas import (
     DocumentUploadResponse,
     DocumentInfo,
     SourceReference,
+    EnforcementRequest,
+    EnforcementReport,
+    GuidelineInfo,
+    GuidelineUploadResponse,
 )
 from layers.parsing import parse_document
 from layers.chunking import chunk_document
@@ -31,6 +35,13 @@ from layers.vectorization import store_chunks, search, get_all_documents, delete
 from layers.generation import generate_rag_response
 from layers.hallucination import analyze_hallucination
 from layers.actions import get_uw_actions
+from layers.guidelines import (
+    store_guideline_chunks,
+    search_guidelines,
+    list_guidelines,
+    delete_guideline,
+    enforce_guidelines,
+)
 from config import (
     GEMINI_API_KEY,
     CORS_ORIGINS,
@@ -216,8 +227,19 @@ async def chat(req: ChatRequest):
         # 2. Get chat history for this session
         history = _chat_history.get(req.session_id, [])
 
+        # 2.5. Search for relevant UW guidelines (if any are loaded)
+        guideline_chunks = None
+        try:
+            gl_results = search_guidelines(req.query, top_k=5)
+            if gl_results:
+                guideline_chunks = gl_results
+        except Exception:
+            pass  # Guidelines are optional — don't fail the chat
+
         # 3. Generate RAG response
-        answer = generate_rag_response(req.query, source_chunks, history)
+        answer = generate_rag_response(
+            req.query, source_chunks, history, guideline_chunks=guideline_chunks
+        )
 
         # 4. Run hallucination detection
         hallucination_report = analyze_hallucination(answer, source_chunks, req.query)
@@ -284,6 +306,115 @@ def clear_session(session_id: str):
     """Clear chat history for a session."""
     _chat_history.pop(session_id, None)
     return {"status": "cleared", "session_id": session_id}
+
+
+# ─── UW Guidelines ──────────────────────────────────────────────
+
+GUIDELINES_UPLOAD_DIR = Path("/tmp/uw_companion_guidelines")
+GUIDELINES_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@app.post("/api/guidelines/upload", response_model=GuidelineUploadResponse)
+async def upload_guideline(
+    file: UploadFile = File(...),
+    line_of_business: str = "general",
+):
+    """Upload a UW guideline document (PDF/DOCX), parse, chunk, and store."""
+    if not file.filename:
+        raise HTTPException(400, "No filename provided")
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in (".pdf", ".docx", ".doc"):
+        raise HTTPException(400, f"Unsupported file type: {ext}. Use PDF or DOCX.")
+
+    guideline_id = str(uuid.uuid4())
+    save_path = GUIDELINES_UPLOAD_DIR / f"{guideline_id}{ext}"
+
+    with open(save_path, "wb") as f:
+        content = await file.read()
+        f.write(content)
+
+    try:
+        pages = parse_document(str(save_path))
+        if not pages:
+            raise HTTPException(400, "Could not extract any text from the guideline")
+
+        chunks = chunk_document(pages, file.filename)
+
+        chunk_dicts = [
+            {
+                "chunk_id": c.chunk_id,
+                "text": c.text,
+                "source": c.source,
+                "page": c.page,
+                "section": c.section,
+            }
+            for c in chunks
+        ]
+
+        num_stored = store_guideline_chunks(
+            chunk_dicts, guideline_id, file.filename, line_of_business, len(pages)
+        )
+
+        return GuidelineUploadResponse(
+            guideline_id=guideline_id,
+            filename=file.filename,
+            line_of_business=line_of_business,
+            num_chunks=num_stored,
+            num_pages=len(pages),
+            status="indexed",
+        )
+
+    except HTTPException:
+        raise
+    except RuntimeError as e:
+        if "GEMINI_API_KEY" in str(e):
+            raise HTTPException(500, "GEMINI_API_KEY not configured on server")
+        raise HTTPException(500, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"Processing failed: {str(e)}")
+
+
+@app.get("/api/guidelines", response_model=List[GuidelineInfo])
+def get_guidelines():
+    """List all stored UW guidelines."""
+    guidelines = list_guidelines()
+    return [
+        GuidelineInfo(
+            guideline_id=g["guideline_id"],
+            filename=g["filename"],
+            line_of_business=g.get("line_of_business", "general"),
+            num_chunks=g["num_chunks"],
+            num_pages=g["num_pages"],
+            upload_time=datetime.now(timezone.utc).isoformat(),
+        )
+        for g in guidelines
+    ]
+
+
+@app.delete("/api/guidelines/{guideline_id}")
+def remove_guideline(guideline_id: str):
+    """Remove a guideline and its chunks."""
+    success = delete_guideline(guideline_id)
+    if not success:
+        raise HTTPException(404, "Guideline not found")
+    for f in GUIDELINES_UPLOAD_DIR.glob(f"{guideline_id}.*"):
+        f.unlink(missing_ok=True)
+    return {"status": "deleted", "guideline_id": guideline_id}
+
+
+@app.post("/api/guidelines/enforce", response_model=EnforcementReport)
+async def enforce_guidelines_endpoint(req: EnforcementRequest):
+    """Check a submission document against stored UW guidelines."""
+    try:
+        report = enforce_guidelines(req.document_id, req.line_of_business)
+        return report
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    except RuntimeError as e:
+        if "GEMINI_API_KEY" in str(e):
+            raise HTTPException(500, "GEMINI_API_KEY not configured on server")
+        raise HTTPException(500, str(e))
 
 
 if __name__ == "__main__":

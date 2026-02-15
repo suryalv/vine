@@ -62,3 +62,50 @@ class DocumentInfo(BaseModel):
     num_chunks: int
     num_pages: int
     upload_time: str
+
+
+# ─── UW Guidelines ────────────────────────────────────────────────
+
+
+class GuidelineViolation(BaseModel):
+    rule: str
+    status: str  # "violation", "warning", "compliant"
+    finding: str
+    guideline_reference: str
+    recommendation: str
+
+
+class EnforcementReport(BaseModel):
+    document_id: str
+    document_name: str
+    line_of_business: str
+    num_guidelines_checked: int
+    num_violations: int
+    num_warnings: int
+    num_compliant: int
+    compliance_score: float = Field(ge=0, le=100)
+    violations: List[GuidelineViolation]
+    summary: str
+
+
+class GuidelineInfo(BaseModel):
+    guideline_id: str
+    filename: str
+    line_of_business: str
+    num_chunks: int
+    num_pages: int
+    upload_time: str
+
+
+class GuidelineUploadResponse(BaseModel):
+    guideline_id: str
+    filename: str
+    line_of_business: str
+    num_chunks: int
+    num_pages: int
+    status: str
+
+
+class EnforcementRequest(BaseModel):
+    document_id: str
+    line_of_business: Optional[str] = None
